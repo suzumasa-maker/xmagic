@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <!-- iPhone最適化: ズーム防止＆セーフエリア(ノッチ・ホームバー)対応 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- iOS「ホーム画面に追加」(PWA) メタタグ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="XMagic Prompt">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#09090b" id="theme-color-meta">
+
+  <title>XMagic Prompt Studio — AI画像・動画プロンプト生成</title>
+
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans JP"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          boxShadow: {
+            'ios-top': '0 -10px 32px rgba(0, 0, 0, 0.34)',
+            'ios-card': '0 4px 20px rgba(0, 0, 0, 0.08)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* iOSネイティブ風のタッチ挙動とセーフエリア対応 */
+    html, body {
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+    }
+
+    /* 横スクロールバー非表示 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* セーフエリア余白 */
+    .pt-safe {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+    .pb-safe {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+
+    /* スムーズなアコーディオン展開 */
+    .collapsible {
+      transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+    .collapsible.open {
+      max-height: 1600px;
+      opacity: 1;
+    }
+
+    /* ボトムシートアニメーション */
+    .sheet-backdrop {
+      transition: opacity 0.25s ease;
+    }
+    .sheet-panel {
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* details サブグループの矢印回転 */
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    details[open] .details-chevron {
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+
+<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-sans antialiased selection:bg-blue-500/30 transition-colors duration-200">
+
+  <!-- アプリ全体コンテナ -->
+  <div class="min-h-screen max-w-lg mx-auto relative flex flex-col bg-zinc-50 dark:bg-zinc-950 shadow-2xl shadow-black/10 dark:shadow-black/50">
+
+    <!-- =========================================================
+         ヘッダー（スティッキー・グラスモーフィズム）
+         ========================================================= -->
+    <header class="sticky top-0 z-30 pt-safe pb-3 px-4 bg-zinc-50/85 dark:bg-zinc-950/85 backdrop-blur-xl border-b border-zinc-200/70 dark:border-zinc-800/70">
+      <div class="flex items-center justify-between gap-2">
+        <!-- ロゴ＆タイトル -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="app-logo-badge" class="w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-sm transition-all duration-300 bg-gradient-to-br from-blue-500 to-violet-600 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-base font-bold tracking-tight leading-tight truncate">XMagic Prompt Studio</h1>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium truncate">画像・動画・I2V プロンプト生成</p>
+          </div>
+        </div>
+
+        <!-- ヘッダーアクションボタン -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" id="btn-random" title="ランダムに組み合わせる" aria-label="ランダム生成"
+            class="p-2.5 rounded-xl bg-zinc-200/70 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-90 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+            </svg>
+          </button>
+
+          <button type="button" id="btn-reset" title="すべてリセット" aria-label="すべてリセット"
+            class="p-2.5 rounded-xl bg-zinc-200/70 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-90 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </button>
+
+          <button type="button" id="btn-history" title="履歴・お気に入り" aria-label="履歴とお気に入り"
+            class="relative p-2.5 rounded-xl bg-zinc-200/70 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-90 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="history-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white bg-blue-500 flex items-center justify-center shadow">0</span>
+          </button>
+
+          <button type="button" id="btn-theme" title="ダーク/ライト切替" aria-label="テーマ切替"
+            class="p-2.5 rounded-xl bg-zinc-200/70 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-90 transition-all">
+            <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            </svg>
+            <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- XMagic 3モード セグメントコントロール -->
+      <div class="mt-3 p-1 rounded-2xl bg-zinc-200/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 grid grid-cols-3 gap-1" role="tablist" aria-label="XMagic生成モード選択">
+        <button type="button" data-mode="t2i" role="tab" aria-selected="true"
+          class="mode-tab py-2 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span>画像生成</span>
+        </button>
+        <button type="button" data-mode="t2v" role="tab" aria-selected="false"
+          class="mode-tab py-2 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>動画生成</span>
+        </button>
+        <button type="button" data-mode="i2v" role="tab" aria-selected="false"
+          class="mode-tab py-2 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95">
+          <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+          <span>画像→動画</span>
+        </button>
+      </div>
+
+      <!-- モードヒント＆出力言語切替 -->
+      <div class="mt-2.5 flex items-center justify-between gap-2 px-0.5">
+        <p id="mode-hint" class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate flex-1">
+          🖼️ 高品質・画風・人物・光影・質感を最適化して出力
+        </p>
+        <div class="p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex shrink-0">
+          <button type="button" data-lang="en" class="lang-btn px-2.5 py-1 rounded-md text-[11px] font-bold transition-all active:scale-95">
+            英語
+          </button>
+          <button type="button" data-lang="ja" class="lang-btn px-2.5 py-1 rounded-md text-[11px] font-bold transition-all active:scale-95">
+            日本語
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- =========================================================
+         メインコンテンツ領域
+         ========================================================= -->
+    <main class="flex-1 px-4 pt-4 pb-64 space-y-4">
+
+      <!-- 0. クイックプリセット（ワンタップ・ジャンルプリセット） -->
+      <section class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 py-3 shadow-ios-card overflow-hidden">
+        <div class="px-4 mb-2 flex items-center justify-between">
+          <span class="text-xs font-bold flex items-center gap-1.5 text-zinc-700 dark:text-zinc-200">
+            <span>⚡ クイックプリセット</span>
+          </span>
+          <span class="text-[10px] text-zinc-400">ワンタップで定番設定を適用</span>
+        </div>
+        <div id="preset-bar" class="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 pb-0.5">
+          <!-- JSで描画 -->
+        </div>
+      </section>
+
+      <!-- 1. メイン被写体・動き指示 ＆ アスペクト比カード -->
+      <section class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-4 shadow-ios-card space-y-3.5">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label for="subject-input" class="text-sm font-bold flex items-center gap-1.5">
+              <span id="subject-label-text">描きたい被写体・シーン</span>
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">メイン</span>
+            </label>
+            <button type="button" id="btn-clear-subject"
+              class="hidden text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 px-2 py-0.5 rounded-lg active:scale-95 transition">
+              クリア
+            </button>
+          </div>
+
+          <textarea id="subject-input" rows="2"
+            placeholder="例：雨上がりの渋谷の路地裏で、ネオンの光を見上げる黒猫"
+            class="w-full text-base leading-relaxed rounded-xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 p-3 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition resize-none"></textarea>
+        </div>
+
+        <!-- I2Vモード時の案内バナー -->
+        <div id="i2v-tip-banner" class="hidden rounded-xl bg-orange-500/10 border border-orange-500/25 px-3 py-2 text-[11px] text-orange-700 dark:text-orange-300 leading-relaxed">
+          🎞️ <strong>画像→動画モード</strong>：元画像を自然に動かすため、動き指示・モーション・表情変化・カメラワークを中心に短いプロンプトを出力します。
+        </div>
+
+        <!-- アスペクト比クイック選択 -->
+        <div id="ratio-section-wrap">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">アスペクト比</span>
+            <span id="ratio-label" class="text-[11px] text-zinc-400">指定なし</span>
+          </div>
+          <div id="ratio-container" class="grid grid-cols-3 gap-1.5">
+            <!-- JSで描画 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 選択中の全タグ サマリーエリア（カテゴリータグ） -->
+      <section id="selected-summary-section" class="hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-3.5 shadow-ios-card">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold">選択中のスタイル・演出タグ</span>
+            <span id="selected-total-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white bg-blue-500">0</span>
+          </div>
+          <button type="button" id="btn-clear-all-tags"
+            class="text-[11px] font-semibold text-zinc-400 hover:text-red-500 px-2 py-0.5 rounded-lg active:scale-95 transition">
+            すべて解除
+          </button>
+        </div>
+        <div id="selected-summary-chips" class="flex flex-wrap gap-1.5">
+          <!-- JSで描画 -->
+        </div>
+      </section>
+
+      <!-- =========================================================
+           C. カテゴリータブ＆チップ選択セクション（9カテゴリー＋横断検索＋カスタム追加）
+           ========================================================= -->
+      <section class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-ios-card overflow-hidden">
+        <!-- 全カテゴリー横断 検索バー -->
+        <div class="px-3 pt-3 pb-2 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/30">
+          <div class="relative">
+            <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input type="search" id="cat-search-input" placeholder="画風・光・影・色・質感・動画タグを検索（日/英）"
+              class="w-full text-base rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 pl-9 pr-8 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+            <button type="button" id="btn-clear-cat-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 text-sm font-bold">×</button>
+          </div>
+        </div>
+
+        <!-- 横スクロール可能なカテゴリータブバー -->
+        <div id="category-tabs-wrap" class="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40">
+          <div id="category-tabs" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-3 py-2.5" role="tablist" aria-label="カテゴリータブ">
+            <!-- JSで描画 -->
+          </div>
+        </div>
+
+        <!-- アクティブカテゴリー（または検索結果）パネル -->
+        <div class="p-4">
+          <div id="cat-panel-header" class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <h2 id="active-cat-title" class="text-sm font-bold truncate">画風・スタイル</h2>
+              <button type="button" id="btn-clear-active-cat"
+                class="hidden text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 px-1.5 py-0.5 rounded active:scale-95 transition shrink-0">
+                選択解除
+              </button>
+            </div>
+            <button type="button" id="btn-toggle-add-word" aria-expanded="false"
+              class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-95 transition border border-zinc-200/80 dark:border-zinc-700/80">
+              <svg id="add-word-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span>ワード追加</span>
+            </button>
+          </div>
+
+          <!-- カスタムワード追加フォーム（折りたたみ展開） -->
+          <div id="add-word-form-wrap" class="collapsible">
+            <form id="add-word-form" class="mb-4 p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 border border-dashed border-zinc-300 dark:border-zinc-700 space-y-2.5">
+              <span class="block text-xs font-bold text-zinc-700 dark:text-zinc-200">
+                「<span id="add-word-cat-name">画風・スタイル</span>」にカスタムワードを追加
+              </span>
+              <div class="space-y-2">
+                <div>
+                  <label for="custom-word-ja" class="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+                    表示名（日本語など） <span class="text-red-500">*</span>
+                  </label>
+                  <input type="text" id="custom-word-ja" required placeholder="例：シネマスコープ風"
+                    class="w-full text-base rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                </div>
+                <div>
+                  <label for="custom-word-en" class="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+                    英語プロンプト用テキスト <span class="text-zinc-400">（任意・空欄時は表示名を使用）</span>
+                  </label>
+                  <input type="text" id="custom-word-en" placeholder="例：cinemascope anamorphic look"
+                    class="w-full text-base rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" id="btn-cancel-add-word"
+                  class="px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 active:scale-95 transition">
+                  キャンセル
+                </button>
+                <button type="submit" id="btn-submit-add-word"
+                  class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition shadow-sm">
+                  追加して選択
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- チップ一覧グリッド -->
+          <div id="active-cat-chips" class="flex flex-wrap gap-1.5">
+            <!-- JSで描画 -->
+          </div>
+
+          <p id="custom-word-hint" class="hidden mt-3 text-[11px] text-zinc-400 flex items-center gap-1">
+            <span>✦ 点線枠はあなたが追加したカスタムワードです（×で削除可能）</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           A. 人物設定セクション（最大3人・6サブタブ・横断検索対応）
+           ========================================================= -->
+      <section id="characters-section" class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-ios-card overflow-hidden">
+        <div class="px-4 py-3 flex items-center justify-between gap-2">
+          <button type="button" id="btn-toggle-characters" aria-expanded="false" class="flex-1 flex items-center gap-2 text-left min-w-0">
+            <span class="text-sm font-bold">人物設定</span>
+            <span id="char-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">0/3</span>
+            <span id="char-optional-hint" class="hidden text-[10px] text-orange-500 font-semibold">I2Vでは任意</span>
+            <svg id="char-chevron" class="w-4 h-4 text-zinc-400 ml-auto transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          <button type="button" id="btn-add-character-header"
+            class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>追加</span>
+          </button>
+        </div>
+
+        <div id="characters-body" class="hidden border-t border-zinc-100 dark:border-zinc-800/80">
+          <!-- 0人のときの空状態 -->
+          <div id="char-empty-state" class="px-4 py-4">
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              種族・性格・髪型/アホ毛・表情/目/口・体型/異形/メカ・衣装/民族衣装/ドレス/水着/ファンタジー・装備/ポーズまで最大3人分を細かく設定できます。右上の「＋追加」をタップしてください。
+            </p>
+          </div>
+
+          <!-- 1〜3人のときのエディタ領域 -->
+          <div id="char-editor-wrap" class="hidden">
+            <!-- 人物切替タブ -->
+            <div id="char-tabs-bar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-3 py-2.5 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200/80 dark:border-zinc-800" role="tablist" aria-label="人物切替タブ">
+              <!-- JSで描画 -->
+            </div>
+
+            <!-- 選択中キャラクターのタグサマリー -->
+            <div id="char-selected-summary" class="hidden px-4 py-2.5 bg-zinc-50/50 dark:bg-zinc-950/30 border-b border-zinc-100 dark:border-zinc-800/80">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">この人物に選択中のタグ (<span id="char-selected-count">0</span>)</span>
+                <button type="button" id="btn-clear-char-tags" class="text-[11px] font-semibold text-zinc-400 hover:text-red-500 active:scale-95">タグ解除</button>
+              </div>
+              <div id="char-selected-chips" class="flex flex-wrap gap-1"></div>
+            </div>
+
+            <!-- 人物タグ横断検索バー -->
+            <div class="px-3 pt-3 pb-2 bg-zinc-50/30 dark:bg-zinc-950/20">
+              <div class="relative">
+                <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input type="search" id="char-search-input" placeholder="人物タグを横断検索（例: ツインテ, エルフ, 水着, 剣, wink）"
+                  class="w-full text-base rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 pl-9 pr-8 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+                <button type="button" id="btn-clear-char-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 text-sm font-bold">×</button>
+              </div>
+            </div>
+
+            <!-- 6サブタブバー -->
+            <div id="char-subtabs-wrap" class="border-b border-zinc-200/80 dark:border-zinc-800 px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <!-- JSで描画 -->
+            </div>
+
+            <!-- アクティブサブタブ（または検索結果）コンテンツ -->
+            <div id="char-active-form" class="p-4 space-y-3.5">
+              <!-- JSで描画 -->
+            </div>
+
+            <!-- 自由メモ＆画面内位置 -->
+            <div id="char-footer-fields" class="px-4 pb-4 space-y-3 border-t border-zinc-100 dark:border-zinc-800/80 pt-3">
+              <!-- JSで描画 -->
+            </div>
+
+            <!-- 複数人（2人以上）の位置関係・体勢設定パネル -->
+            <div id="group-relation-panel" class="hidden border-t border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/40 p-4 space-y-3">
+              <!-- JSで描画 -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           B. シーン・背景設定セクション（折りたたみ・3サブタブ・検索対応）
+           ========================================================= -->
+      <section id="scene-section" class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-ios-card overflow-hidden">
+        <button type="button" id="btn-toggle-scene" aria-expanded="false"
+          class="w-full px-4 py-3.5 flex items-center justify-between gap-2 text-left active:bg-zinc-50 dark:active:bg-zinc-800/50 transition">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold">シーン・背景設定</span>
+              <span class="text-[11px] text-zinc-500 dark:text-zinc-400">部屋・店舗・日時・天候</span>
+              <span id="scene-count-badge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white bg-blue-500">0</span>
+              <span id="scene-optional-hint" class="hidden text-[10px] text-orange-500 font-semibold">I2Vでは任意</span>
+            </div>
+            <div id="scene-summary-badges" class="hidden mt-1.5 flex flex-wrap gap-1">
+              <!-- JSで描画 -->
+            </div>
+          </div>
+          <svg id="scene-chevron" class="w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        <div id="scene-body" class="hidden border-t border-zinc-100 dark:border-zinc-800/80">
+          <!-- シーン検索バー -->
+          <div class="px-3 pt-3 pb-2 bg-zinc-50/40 dark:bg-zinc-950/20">
+            <div class="relative">
+              <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <input type="search" id="scene-search-input" placeholder="背景・部屋・店舗・天候を検索（例: カフェ, 寝室, 雨）"
+                class="w-full text-base rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 pl-9 pr-8 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+              <button type="button" id="btn-clear-scene-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 text-sm font-bold">×</button>
+            </div>
+          </div>
+
+          <!-- シーン3サブタブ -->
+          <div id="scene-subtabs-wrap" class="border-b border-zinc-200/80 dark:border-zinc-800 px-3 py-2 flex items-center justify-between gap-2">
+            <div id="scene-subtabs" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
+            <button type="button" id="btn-clear-scene" class="shrink-0 text-[11px] font-semibold text-zinc-400 hover:text-red-500 active:scale-95 px-1.5">クリア</button>
+          </div>
+
+          <!-- シーンフォームコンテナ -->
+          <div id="scene-form-container" class="p-4 space-y-3.5">
+            <!-- JSで描画 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. ネガティブプロンプト（避けたい要素）アコーディオン -->
+      <section class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-ios-card overflow-hidden">
+        <button type="button" id="btn-accordion-options" aria-expanded="false"
+          class="w-full p-4 flex items-center justify-between text-left active:bg-zinc-50 dark:active:bg-zinc-800/50 transition">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold">ネガティブプロンプト</span>
+            <span class="text-xs text-zinc-500 dark:text-zinc-400">避けたい要素</span>
+            <span id="options-active-dot" class="hidden w-2 h-2 rounded-full bg-blue-500"></span>
+          </div>
+          <svg id="accordion-chevron" class="w-4 h-4 text-zinc-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        <div id="accordion-options-body" class="collapsible">
+          <div class="px-4 pb-4 pt-2 space-y-3 border-t border-zinc-100 dark:border-zinc-800/80">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="negative-input" class="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                  除外したい要素（自由入力・チップ追加）
+                </label>
+                <button type="button" id="btn-clear-negative" class="text-[11px] font-semibold text-zinc-400 hover:text-red-500 active:scale-95 transition">
+                  クリア
+                </button>
+              </div>
+              <input type="text" id="negative-input" placeholder="例：blurry, low quality, distortion, watermark"
+                class="w-full text-base rounded-xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 px-3 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition">
+              <div id="neg-chips-wrap" class="mt-2 flex flex-wrap gap-1.5">
+                <!-- JSで描画 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- =========================================================
+         下部固定バー（リアルタイムプレビュー＆ワンタップコピー）
+         ========================================================= -->
+    <footer class="fixed bottom-0 left-0 right-0 z-30 pointer-events-none">
+      <div class="max-w-lg mx-auto pointer-events-auto bg-white/92 dark:bg-zinc-900/92 backdrop-blur-2xl border-t border-zinc-200/80 dark:border-zinc-800 shadow-ios-top px-4 pt-3 pb-safe rounded-t-3xl">
+
+        <!-- プレビューヘッダー -->
+        <div class="flex items-center justify-between mb-1.5 gap-2">
+          <button type="button" id="btn-toggle-preview" class="flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-300 active:opacity-70 min-w-0">
+            <span id="preview-mode-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold text-white bg-blue-500 shrink-0">T2I 画像</span>
+            <span class="truncate">生成プロンプト</span>
+            <span id="preview-char-count" class="text-[11px] font-normal text-zinc-400 shrink-0">0文字</span>
+          </button>
+          <button type="button" id="btn-expand-preview" class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 px-2 py-0.5 rounded-lg shrink-0">
+            全文表示
+          </button>
+        </div>
+
+        <!-- リアルタイムプレビューボックス -->
+        <div id="prompt-preview-box" role="button" tabindex="0" aria-label="プロンプトプレビューを展開"
+          class="mb-3 p-2.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-950/80 border border-zinc-200/70 dark:border-zinc-800/90 text-xs sm:text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-200 max-h-20 overflow-y-auto transition-all duration-200 whitespace-pre-wrap break-words font-mono cursor-pointer">
+          クイックプリセットを選ぶか、被写体・タグを選択してください...
+        </div>
+
+        <!-- アクションボタン行 -->
+        <div class="flex items-center gap-2">
+          <button type="button" id="btn-save-fav" title="お気に入りに保存" aria-label="お気に入りに保存"
+            class="p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-95 transition-all shrink-0 border border-zinc-200/70 dark:border-zinc-700/70">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+            </svg>
+          </button>
+
+          <button type="button" id="btn-copy"
+            class="flex-1 py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base text-white shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200 bg-gradient-to-r from-blue-600 to-violet-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+            </svg>
+            <span>プロンプトをコピー</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- =========================================================
+       履歴・お気に入り ボトムシートモーダル
+       ========================================================= -->
+  <div id="history-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
+    <div id="history-backdrop" class="sheet-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0"></div>
+
+    <div id="history-panel" class="sheet-panel fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-zinc-900 rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800 shadow-2xl translate-y-full max-h-[82vh] flex flex-col">
+      <div class="w-full flex justify-center pt-3 pb-1">
+        <div class="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700"></div>
+      </div>
+
+      <div class="px-5 py-2 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+        <h2 class="text-base font-bold">履歴・お気に入り</h2>
+        <button type="button" id="btn-close-history" class="p-2 -mr-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 active:scale-90 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 pt-3 pb-2">
+        <div class="p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 grid grid-cols-2 gap-1">
+          <button type="button" data-htab="history" class="htab-btn py-1.5 rounded-lg text-xs font-bold transition">
+            コピー履歴
+          </button>
+          <button type="button" data-htab="favorites" class="htab-btn py-1.5 rounded-lg text-xs font-bold transition">
+            ★ お気に入り
+          </button>
+        </div>
+      </div>
+
+      <div id="history-list" class="flex-1 overflow-y-auto px-5 py-2 space-y-3 pb-safe">
+        <!-- JSで描画 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       iOS風 トースト通知
+       ========================================================= -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-none opacity-0 -translate-y-4 transition-all duration-300 pt-safe">
+    <div class="px-4 py-2.5 rounded-full bg-zinc-900/95 dark:bg-zinc-100/95 text-white dark:text-zinc-900 text-xs sm:text-sm font-semibold shadow-xl flex items-center gap-2 backdrop-blur-md whitespace-nowrap">
+      <span id="toast-icon">✅</span>
+      <span id="toast-message">コピーしました！</span>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       JavaScript アプリケーション本体
+       ========================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      // タグ配列展開ヘルパー: [en, ja] -> { id, en, label }
+      function expandTags(prefix, pairs) {
+        return pairs.map(([en, ja], idx) => ({
+          id: `${prefix}_${idx}`,
+          en,
+          label: ja
+        }));
+      }
+
+      // =========================================================
+      // 1. モード・プリセット・アスペクト比・ネガティブ定義
+      // =========================================================
+      const MODE_CONFIG = {
+        t2i: {
+          name: '画像生成',
+          shortBadge: 'T2I 画像',
+          hint: '🖼️ 高品質・画風・人物・背景・光影・質感を最適化して出力',
+          subjectLabel: '描きたい被写体・シーン',
+          subjectPlaceholder: '例：雨上がりの渋谷の路地裏で、ネオンの光を見上げる黒猫',
+          badgeBg: 'bg-blue-500',
+          logoGradient: 'from-blue-500 to-violet-600',
+          copyGradient: 'from-blue-600 to-violet-600',
+          activeChip: 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/25',
+          activeTab: 'bg-blue-600 text-white shadow-sm shadow-blue-500/20',
+          submitBtn: 'bg-blue-600 hover:bg-blue-500',
+          tabActiveClass: 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
+        },
+        t2v: {
+          name: '動画生成',
+          shortBadge: 'T2V 動画',
+          hint: '🎬 被写体・動き・カメラワークを先頭に配置して動画生成を最適化',
+          subjectLabel: '生成したい動画の被写体・シーン',
+          subjectPlaceholder: '例：夕暮れの海辺を歩きながら振り返って微笑む女性',
+          badgeBg: 'bg-emerald-500',
+          logoGradient: 'from-emerald-500 to-teal-600',
+          copyGradient: 'from-emerald-600 to-teal-600',
+          activeChip: 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-500/25',
+          activeTab: 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20',
+          submitBtn: 'bg-emerald-600 hover:bg-emerald-500',
+          tabActiveClass: 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+        },
+        i2v: {
+          name: '画像→動画',
+          shortBadge: 'I2V 動き',
+          hint: '🎞️ 元画像を活かし、動き・表情変化・カメラワークに特化して出力',
+          subjectLabel: '動かしたい内容・指示（元画像の動き）',
+          subjectPlaceholder: '例：ゆっくり瞬きして微笑み、風が髪を優しく揺らす',
+          badgeBg: 'bg-orange-500',
+          logoGradient: 'from-orange-500 to-amber-600',
+          copyGradient: 'from-orange-500 to-amber-600',
+          activeChip: 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/25',
+          activeTab: 'bg-orange-500 text-white shadow-sm shadow-orange-500/20',
+          submitBtn: 'bg-orange-500 hover:bg-orange-400',
+          tabActiveClass: 'bg-white dark:bg-zinc-800 text-orange-600 dark:text-orange-400 shadow-sm'
+        }
+      };
+
+      const ASPECT_RATIOS = [
+        { id: '', label: '指定なし', desc: '指定なし', en: '' },
+        { id: '1:1', label: '1:1', desc: '正方形', en: '1:1 aspect ratio' },
+        { id: '16:9', label: '16:9', desc: '横長ワイド', en: '16:9 widescreen aspect ratio' },
+        { id: '9:16', label: '9:16', desc: '縦長スマホ', en: '9:16 vertical aspect ratio' },
+        { id: '4:3', label: '4:3', desc: '標準横長', en: '4:3 aspect ratio' },
+        { id: '3:4', label: '3:4', desc: '縦長ポートレート', en: '3:4 portrait aspect ratio' }
+      ];
+
+      const NEGATIVE_PRESETS = [
+        { ja: 'ぼやけ・低画質', en: 'blurry, low quality, lowres' },
+        { ja: '形状の崩れ', en: 'morphing, distortion, deformed' },
+        { ja: '指・人体の崩れ', en: 'extra fingers, bad hands, bad anatomy' },
+        { ja: '透かし・文字', en: 'watermark, text, signature, logo' },
+        { ja: 'チラつき・破綻', en: 'flickering, jitter, temporal artifacts' }
+      ];
+
+      // =========================================================
+      // 2. Cセクション：メインカテゴリー（9カテゴリー全タグ）
+      // =========================================================
+      const CATEGORIES = [
+        {
+          id: 'style',
+          shortName: '画風',
+          title: '画風・スタイル',
+          isVideo: false,
+          items: expandTags('st', [
+            ['anime style', 'アニメ調'],
+            ['manga style', '漫画風'],
+            ['realistic', '写実的'],
+            ['semi-realistic', 'セミリアル'],
+            ['sketch', 'スケッチ風'],
+            ['lineart', '線画のみ'],
+            ['monochrome', 'モノクロ'],
+            ['pastel colors', 'パステル調'],
+            ['vibrant colors', '鮮やかな色合い'],
+            ['flat colors', 'ベタ塗り'],
+            ['watercolor', '水彩風'],
+            ['oil painting', '油彩風'],
+            ['pixel art', 'ドット絵'],
+            ['8bit', '8bitレトロ'],
+            ['16bit', '16bitレトロ'],
+            ['chiaroscuro', 'キアロスクーロ(明暗対比)'],
+            ['etching', '版画風'],
+            ['brushwork', '筆跡・厚塗り'],
+            ['cel shading', 'セル塗り'],
+            ['soft shading', '柔らかい影・ぼかし塗り'],
+            ['gothic art', 'ゴシック調'],
+            ['baroque', 'バロック風'],
+            ['pop art', 'ポップアート'],
+            ['minimalist', 'ミニマル風'],
+            ['retro style', 'レトロ(昭和・80年代風)'],
+            ['modern style', '現代的スタイル'],
+            ['futuristic design', '未来的デザイン(SF)'],
+            ['cyberpunk', 'サイバーパンク'],
+            ['art nouveau', 'アールヌーボー'],
+            ['surreal', 'シュール'],
+            ['photorealistic photography', '実写写真'],
+            ['3D Octane render', '3D Octaneレンダー'],
+            ['Ukiyo-e', '浮世絵'],
+            ['vintage 35mm film', '35mmフィルム写真']
+          ])
+        },
+        {
+          id: 'quality',
+          shortName: '高品質',
+          title: '高品質・仕上げ',
+          isVideo: false,
+          items: expandTags('ql', [
+            ['masterpiece', '傑作・最高品質'],
+            ['best quality', '最高品質'],
+            ['high quality', '高品質'],
+            ['ultra detailed', '超高精細'],
+            ['highly detailed', '高精度・緻密'],
+            ['incredibly detailed', '驚くほど細かい'],
+            ['absurdres', '超高解像度'],
+            ['official art', '公式絵風の完成度'],
+            ['perfect anatomy', '完璧な人体バランス'],
+            ['photo-realistic', '写真のようにリアル'],
+            ['8k resolution', '8K解像度'],
+            ['sharp focus', 'シャープフォーカス'],
+            ['cinematic film still', '映画のワンシーン']
+          ])
+        },
+        {
+          id: 'lighting',
+          shortName: '光・照明',
+          title: '光・ライティング',
+          isVideo: false,
+          items: expandTags('lt', [
+            ['sunlight', '太陽光'],
+            ['sunlight through window', '窓から差し込む日差し'],
+            ['sunbeam', '一筋の光'],
+            ['backlight', '逆光'],
+            ['soft lighting', '柔らかい光'],
+            ['ambient light', '環境光'],
+            ['natural lighting', '自然な光'],
+            ['lamp light', 'ランプ・室内灯の光'],
+            ['candlelight', 'ろうそくの光'],
+            ['firelight', '焚き火・暖炉の光'],
+            ['neon light', 'ネオンライト'],
+            ['glowing', '発光'],
+            ['fluorescent lighting', '蛍光灯の光'],
+            ['computer screen glow', 'モニター光'],
+            ['glow', '光のにじみ・発光感'],
+            ['lens flare', 'レンズフレア'],
+            ['shining', '輝いている'],
+            ['sparkles', 'きらきら光る粒'],
+            ['light rays', '放射状の光線'],
+            ['reflected light', '反射光'],
+            ['highlight', 'ハイライト'],
+            ['warm lighting', '暖色系の光'],
+            ['cool lighting', '寒色系の光'],
+            ['golden hour', 'ゴールデンアワー'],
+            ['twilight', '薄明かり(黄昏)'],
+            ['moonlight', '月明かり'],
+            ['dramatic lighting', 'ドラマチック照明'],
+            ['rim lighting', '縁取り光(リムライト)'],
+            ['volumetric lighting', 'ボリュメトリック光'],
+            ['underlighting', '下からの照明']
+          ])
+        },
+        {
+          id: 'shadow',
+          shortName: '影・暗がり',
+          title: '影・暗がり',
+          isVideo: false,
+          items: expandTags('sh', [
+            ['shadow', '基本的な影'],
+            ['shadows', '複数の影'],
+            ['silhouette', 'シルエット'],
+            ['backlit silhouette', '逆光シルエット'],
+            ['strong shadow', '強い影'],
+            ['soft shadow', '柔らかい影'],
+            ['cast shadow', '地面や壁に落ちた影'],
+            ['low lighting', '光が少ない(暗所)'],
+            ['dark room', '暗い部屋'],
+            ['shadowed face', '顔が影になっている'],
+            ['shadow over eyes', '目元に影'],
+            ['underlit', '下からの不気味な影'],
+            ['chiaroscuro', '明暗強調'],
+            ['vignette', '周辺減光(ビネット)'],
+            ['shaded', '影が落ちた状態'],
+            ['face shadow', '顔全体の影'],
+            ['body shadow', '体に落ちる影'],
+            ['shadow on wall', '壁に映る影'],
+            ['foot shadow', '足元の影'],
+            ['hair shadow', '髪でできた影'],
+            ['clothing shadow', '服の陰影'],
+            ['eye shadow', 'アイシャドウ(メイク)'],
+            ['ominous shadow', '不穏な影'],
+            ['monster shadow', 'モンスターの影'],
+            ['giant shadow', '巨大な影'],
+            ['dappled light', '木漏れ日の斑影'],
+            ['striped shadow', 'ブラインド越しの影'],
+            ['shadow figure', '影の人物'],
+            ['hidden in shadow', '影に隠れている'],
+            ['shadow play', '影絵・光と影の演出']
+          ])
+        },
+        {
+          id: 'color',
+          shortName: '色彩',
+          title: '色彩・トーン',
+          isVideo: false,
+          items: expandTags('cl', [
+            ['red', '赤'],
+            ['blue', '青'],
+            ['green', '緑'],
+            ['yellow', '黄'],
+            ['orange', 'オレンジ'],
+            ['pink', 'ピンク'],
+            ['purple', '紫'],
+            ['brown', '茶'],
+            ['black', '黒'],
+            ['white', '白'],
+            ['gray', '灰色'],
+            ['gold', '金色'],
+            ['silver', '銀色'],
+            ['beige', 'ベージュ'],
+            ['ivory', 'アイボリー'],
+            ['light blue', '明るい青(水色)'],
+            ['dark blue', '濃い青'],
+            ['light green', '明るい緑(若草色)'],
+            ['dark green', '深い緑'],
+            ['light brown', '明るい茶'],
+            ['dark brown', '濃い茶'],
+            ['light purple', '明るい紫(藤色)'],
+            ['dark purple', '濃い紫'],
+            ['pastel pink', 'パステルピンク'],
+            ['pastel blue', 'パステルブルー'],
+            ['neon green', 'ネオングリーン'],
+            ['vivid red', '鮮やかな赤'],
+            ['pale yellow', '淡い黄色'],
+            ['deep red', '深紅'],
+            ['rainbow', '虹色'],
+            ['translucent', '半透明'],
+            ['colorful', 'カラフル'],
+            ['glowing', '発光色'],
+            ['metallic', 'メタリック'],
+            ['iridescent', '玉虫色・虹色光沢'],
+            ['monochrome', 'モノクロ'],
+            ['sepia', 'セピア'],
+            ['black and white', '白黒']
+          ])
+        },
+        {
+          id: 'texture',
+          shortName: '質感',
+          title: 'テクスチャー・質感',
+          isVideo: false,
+          items: expandTags('tx', [
+            ['silk', '絹(シルク)'],
+            ['satin', 'サテン(光沢)'],
+            ['lace', 'レース'],
+            ['velvet', 'ベルベット'],
+            ['cotton', '綿(コットン)'],
+            ['linen', 'リネン'],
+            ['wool', 'ウール'],
+            ['knit', 'ニット・編み物'],
+            ['sheer', '透け感のある布'],
+            ['frilly', 'フリル付き布'],
+            ['leather', '革素材(レザー)'],
+            ['pleather', '合皮(ツヤあり)'],
+            ['latex', 'ラテックス'],
+            ['rubber suit', 'ラバー質感'],
+            ['metal', '金属'],
+            ['armor plating', '装甲プレート'],
+            ['chainmail', 'チェインメイル'],
+            ['glass', 'ガラス'],
+            ['plastic', 'プラスチック'],
+            ['carbon fiber', '炭素繊維'],
+            ['wooden texture', '木の質感'],
+            ['stone texture', '石の質感'],
+            ['brick wall', 'レンガ壁'],
+            ['fur', '毛皮'],
+            ['scales', 'ウロコ'],
+            ['feathers', '羽毛'],
+            ['crystal', 'クリスタル'],
+            ['glowing material', '発光素材'],
+            ['transparent material', '透明素材'],
+            ['reflective surface', '反射する面']
+          ])
+        },
+        {
+          id: 'composition',
+          shortName: '構図・カメラ',
+          title: '構図・カメラ',
+          isVideo: false,
+          items: expandTags('cp', [
+            ['extreme close-up', '超クローズアップ'],
+            ['full-body shot', '全身ショット'],
+            ['wide-angle lens', '広角レンズ'],
+            ["bird's-eye view", '俯瞰(バードアイ)'],
+            ['low-angle shot', 'ローアングル'],
+            ['shallow depth of field, bokeh', '背景ぼかし(ボケ)'],
+            ['35mm lens', '35mmレンズ'],
+            ['85mm portrait', '85mmポートレート'],
+            ['symmetrical', 'シンメトリー'],
+            ['macro', 'マクロ撮影'],
+            ['Dutch angle', '斜め構図(ダッチアングル)'],
+            ['rule of thirds', '三分割構図']
+          ])
+        },
+        {
+          id: 'camera',
+          shortName: 'カメラワーク',
+          title: 'カメラワーク (動画)',
+          isVideo: true,
+          items: expandTags('cm', [
+            ['zoom in', 'ズームイン'],
+            ['zoom out', 'ズームアウト'],
+            ['pan left', '左パン'],
+            ['pan right', '右パン'],
+            ['tilt up', 'チルトアップ'],
+            ['tilt down', 'チルトダウン'],
+            ['tracking shot', '追従ショット'],
+            ['orbit around subject', '回り込み(オービット)'],
+            ['static camera', '固定カメラ'],
+            ['handheld camera', '手持ちカメラ風'],
+            ['dolly zoom', 'ドリーズーム'],
+            ['FPV drone', 'FPVドローン']
+          ])
+        },
+        {
+          id: 'motion',
+          shortName: '動き・速度',
+          title: '動き・速度 (動画)',
+          isVideo: true,
+          items: expandTags('mt', [
+            ['slow motion', 'スローモーション'],
+            ['subtle breathing', '自然な呼吸'],
+            ['hair blowing in the wind', '風になびく髪'],
+            ['walking forward', '前進・歩く'],
+            ['turning head slowly', 'ゆっくり振り返る'],
+            ['clothes fluttering', '風になびく服'],
+            ['blinking naturally', '自然な瞬き'],
+            ['dynamic action', 'ダイナミックアクション'],
+            ['water rippling', '水面の波紋'],
+            ['particles floating', '舞い散る粒子・花びら']
+          ])
+        }
+      ];
+
+      // 英語タグ名からメインカテゴリーのIDを引くヘルパー（クイックプリセット用）
+      function findCatTagId(catId, enName) {
+        const cat = CATEGORIES.find(c => c.id === catId);
+        if (!cat) return null;
+        const found = cat.items.find(i => i.en === enName);
+        return found ? found.id : null;
+      }
+
+      // クイックプリセット定義（6ジャンル）
+      const QUICK_PRESETS = [
+        {
+          id: 'preset_portrait',
+          label: '実写ポートレート',
+          icon: '📷',
+          mode: 't2i',
+          tagBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25',
+          ratio: '3:4',
+          tags: {
+            quality: ['masterpiece', 'best quality', 'photo-realistic', '8k resolution', 'sharp focus'],
+            style: ['photorealistic photography'],
+            composition: ['85mm portrait', 'shallow depth of field, bokeh'],
+            lighting: ['golden hour', 'natural lighting']
+          },
+          focusCat: 'style'
+        },
+        {
+          id: 'preset_cinematic',
+          label: 'シネマティック映画',
+          icon: '🎥',
+          mode: 't2i',
+          tagBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25',
+          ratio: '16:9',
+          tags: {
+            quality: ['masterpiece', 'ultra detailed', 'cinematic film still', '8k resolution'],
+            style: ['vintage 35mm film', 'chiaroscuro'],
+            composition: ['wide-angle lens'],
+            lighting: ['dramatic lighting', 'volumetric lighting'],
+            shadow: ['strong shadow', 'vignette']
+          },
+          focusCat: 'style'
+        },
+        {
+          id: 'preset_anime',
+          label: 'アニメ・イラスト',
+          icon: '🎨',
+          mode: 't2i',
+          tagBg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/25',
+          ratio: '3:4',
+          tags: {
+            quality: ['masterpiece', 'best quality', 'ultra detailed', 'official art'],
+            style: ['anime style', 'cel shading', 'vibrant colors'],
+            lighting: ['backlight', 'rim lighting', 'sparkles']
+          },
+          focusCat: 'style'
+        },
+        {
+          id: 'preset_real_video',
+          label: '実写シネマ動画',
+          icon: '🎬',
+          mode: 't2v',
+          tagBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
+          ratio: '16:9',
+          tags: {
+            camera: ['tracking shot', 'zoom in'],
+            motion: ['slow motion', 'hair blowing in the wind', 'clothes fluttering'],
+            style: ['photorealistic photography'],
+            lighting: ['golden hour', 'lens flare'],
+            quality: ['cinematic film still', '8k resolution']
+          },
+          focusCat: 'camera'
+        },
+        {
+          id: 'preset_anime_action',
+          label: 'アニメ動画・アクション',
+          icon: '⚡',
+          mode: 't2v',
+          tagBg: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/25',
+          ratio: '16:9',
+          tags: {
+            camera: ['tracking shot', 'orbit around subject'],
+            motion: ['dynamic action', 'particles floating'],
+            style: ['anime style', 'cel shading', 'vibrant colors'],
+            lighting: ['dramatic lighting', 'light rays'],
+            quality: ['masterpiece', 'best quality']
+          },
+          focusCat: 'motion'
+        },
+        {
+          id: 'preset_i2v_natural',
+          label: 'I2V 自然な動き',
+          icon: '🎞️',
+          mode: 'i2v',
+          tagBg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25',
+          ratio: '',
+          tags: {
+            camera: ['zoom in'],
+            motion: ['subtle breathing', 'blinking naturally', 'hair blowing in the wind']
+          },
+          focusCat: 'motion'
+        }
+      ];
+
+      // =========================================================
+      // 3. Aセクション：人物設定（6サブタブ＋詳細グループ全タグ）
+      // =========================================================
+      const CHAR_GENDERS = [
+        { id: 'woman', label: '女性', en: 'woman' },
+        { id: 'man', label: '男性', en: 'man' },
+        { id: 'girl', label: '少女', en: 'girl' },
+        { id: 'boy', label: '少年', en: 'boy' },
+        { id: 'androgynous person', label: '中性的', en: 'androgynous person' },
+        { id: '', label: '指定なし', en: '' }
+      ];
+
+      const CHAR_POSITIONS = [
+        { id: '', label: '指定なし', en: '' },
+        { id: 'on the left side', label: '左側', en: 'on the left side' },
+        { id: 'in the center', label: '中央', en: 'in the center' },
+        { id: 'on the right side', label: '右側', en: 'on the right side' },
+        { id: 'in the foreground', label: '手前', en: 'in the foreground' },
+        { id: 'in the background', label: '奥', en: 'in the background' }
+      ];
+
+      const GROUP_ARRANGEMENTS = expandTags('ga', [
+        ['standing side by side', '横並び'],
+        ['facing each other', '向かい合う'],
+        ['standing back to back', '背中合わせ'],
+        ['standing close shoulder to shoulder', '肩を寄せ合う'],
+        ['arranged diagonally', '斜めに並ぶ']
+      ]);
+
+      const GROUP_INTERACTIONS = expandTags('gi', [
+        ['chatting happily', '笑顔で会話'],
+        ["gazing into each other's eyes", '見つめ合う'],
+        ['holding hands', '手をつなぐ'],
+        ['walking together', '一緒に歩く'],
+        ['dramatic standoff', '対峙(バトル)'],
+        ['hugging', 'ハグする']
+      ]);
+
+      const CHAR_SUBTABS = [
+        {
+          id: 'basic',
+          label: '基本・種族・性格',
+          groups: [
+            {
+              title: '種族',
+              defaultOpen: true,
+              items: [
+                ['elf', 'エルフ'], ['dark elf', 'ダークエルフ'], ['high elf', '高位エルフ'], ['half-elf', 'ハーフエルフ'],
+                ['dwarf', 'ドワーフ'], ['orc', 'オーク'], ['goblin', 'ゴブリン'], ['fairy', '妖精'],
+                ['dryad', '樹の精霊'], ['nymph', 'ニンフ'], ['dragonkin', '竜人'], ['beastkin', '獣人'],
+                ['werewolf', '人狼'], ['vampire', '吸血鬼'], ['succubus', 'サキュバス'], ['incubus', 'インキュバス'],
+                ['angel', '天使'], ['fallen angel', '堕天使'], ['demon', 'デーモン'], ['devil', 'デビル'],
+                ['slime girl', 'スライム娘'], ['lamia', 'ラミア'], ['centaur', 'ケンタウロス'], ['arachne', 'アラクネ'],
+                ['harpy', 'ハーピー'], ['mermaid', '人魚'], ['naga', 'ナーガ'], ['minotaur', 'ミノタウロス'],
+                ['cyclops', '単眼巨人'], ['golem', 'ゴーレム'], ['ghost', '幽霊'], ['zombie', 'ゾンビ'],
+                ['skeleton', '骸骨'], ['android', 'アンドロイド'], ['cyborg', 'サイボーグ'], ['robot', 'ロボット'],
+                ['alien', '宇宙人'], ['tentacle creature', '触手生命体'], ['chimera', 'キメラ'], ['humanoid', '人型'],
+                ['demihuman', '亜人'], ['beastman', '獣人・男性系'], ['monster girl', 'モンスター娘'], ['witch', '魔女'],
+                ['shapeshifter', '変身能力者'], ['elemental', '精霊'], ['spirit', '精神体・幽体'], ['dragon', '竜'],
+                ['divine being', '神族・神性']
+              ]
+            },
+            {
+              title: '性格：強気・わがまま・ツン系',
+              defaultOpen: false,
+              items: [
+                ['confident', '自信家'], ['arrogant', '傲慢'], ['prideful', 'プライドが高い'], ['hot-headed', '短気'],
+                ['tsundere', 'ツンデレ'], ['stubborn', '頑固'], ['fiery', '情熱的'], ['competitive', '負けず嫌い'],
+                ['impulsive', '衝動的'], ['provocative', '挑発的']
+              ]
+            },
+            {
+              title: '性格：繊細・内気系',
+              defaultOpen: false,
+              items: [
+                ['shy', '恥ずかしがり屋'], ['timid', '気が弱い'], ['insecure', '不安がち'], ['nervous', '緊張しやすい'],
+                ['gentle', '優しい'], ['emotional', '感情豊か'], ['clingy', '甘えん坊'], ['soft-spoken', '控えめ'],
+                ['innocent', '無垢'], ['naive', '世間知らず']
+              ]
+            },
+            {
+              title: '性格：個性的・クセ強め',
+              defaultOpen: false,
+              items: [
+                ['eccentric', '風変わり'], ['sarcastic', '皮肉屋'], ['cynical', '冷笑的'], ['manipulative', '裏がある'],
+                ['yandere', 'ヤンデレ'], ['kuudere', 'クーデレ'], ['dandere', 'ダンデレ'], ['genki girl', '元気娘'],
+                ['airheaded', '天然'], ['chaotic', 'カオス']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'hair',
+          label: '髪型・アホ毛・髪飾り',
+          groups: [
+            {
+              title: '基本・前髪・髪質',
+              defaultOpen: true,
+              items: [
+                ['long hair', '長髪'], ['short hair', 'ショートヘア'], ['twin tails', 'ツインテール'], ['ponytail', 'ポニーテール'],
+                ['bob cut', 'ボブカット'], ['braided hair', '三つ編み'], ['drill hair', '縦ロール'], ['side ponytail', 'サイドポニー'],
+                ['twintail braid', '三つ編みツインテ'], ['messy hair', '無造作ヘア'], ['bangs', '前髪'], ['blunt bangs', 'パッツン前髪'],
+                ['swept bangs', '流し前髪'], ['parted bangs', '分け前髪'], ['see-through bangs', 'シースルーバング'], ['uneven bangs', '不揃い前髪'],
+                ['hair over eyes', '目にかかる前髪'], ['hair between eyes', 'センター前髪'], ['forehead', 'おでこ'], ['no bangs', '前髪なし'],
+                ['straight hair', 'ストレート'], ['wavy hair', 'ウェーブ'], ['curly hair', '巻き髪'], ['thick hair', '毛量多い'],
+                ['thin hair', '毛量少ない'], ['fluffy hair', 'ふわふわ髪'], ['spiky hair', 'とがった髪'], ['slicked back hair', 'オールバック'],
+                ['frizzy hair', 'クセ毛']
+              ]
+            },
+            {
+              title: 'アホ毛',
+              defaultOpen: false,
+              items: [
+                ['ahoge', 'アホ毛'], ['multiple ahoge', '複数アホ毛'], ['long ahoge', '長いアホ毛'], ['curved ahoge', '曲がったアホ毛'],
+                ['X-shaped ahoge', 'X字アホ毛'], ['antenna hair', '触角ヘア'], ['forelock', '額の毛束'], ['hair sticking out', '飛び出し髪'],
+                ['cowlick', '寝ぐせ立ち毛'], ['one strand of hair sticking up', '一本立ちアホ毛']
+              ]
+            },
+            {
+              title: '凝った髪型・位置',
+              defaultOpen: false,
+              items: [
+                ['french braid', 'フレンチブレイド'], ['dutch braid', 'ダッチブレイド'], ['twin braids', '両側三つ編み'], ['side braid', 'サイド三つ編み'],
+                ['braid crown', '編み込み冠'], ['hair rings', 'ヘアリング'], ['multiple braids', '複数編み込み'], ['hair buns', 'お団子複数'],
+                ['double bun', 'ツイン団子'], ['spiral hair', '螺旋巻き髪'], ['loop hairstyle', 'ループヘア'], ['side updo', 'サイドアップ'],
+                ['odango', '団子髪'], ['tied hair', '結んだ髪'], ['hair twintails with accessories', '飾り付きツインテ'], ['decorative hair', '装飾的髪型'],
+                ['asymmetrical hair', '左右非対称'], ['on head', '頭の上'], ['over head', '頭を覆う'], ['top of head', '頭頂部'],
+                ['side of head', '頭の横'], ['side bun', 'サイド団子'], ['low twintails', '低めツインテ'], ['high twintails', '高めツインテ'],
+                ['low ponytail', '低めポニテ'], ['high ponytail', '高めポニテ'], ['single hair bun', '中央お団子'], ['hair over one eye', '片目隠し'],
+                ['hair pulled back', '後ろ流し'], ['framing bangs', '顔周り前髪'], ['ahoge on top', '頭頂アホ毛'], ['ear accessories', '耳周辺アクセ']
+              ]
+            },
+            {
+              title: '髪飾り',
+              defaultOpen: false,
+              items: [
+                ['hair ornament', '髪飾り'], ['hair ribbon', '髪リボン'], ['hairband', 'ヘアバンド'], ['flower in hair', '髪に花'],
+                ['hair clip', '髪留め'], ['hair bow', '大きなリボン'], ['scrunchie', 'シュシュ'], ['hair beads', 'ヘアビーズ'],
+                ['kanzashi', '簪(かんざし)'], ['tiara', 'ティアラ']
+              ]
+            },
+            {
+              title: '髪色（特殊・アクセント含む）',
+              defaultOpen: false,
+              items: [
+                ['black hair', '黒髪'], ['brown hair', '茶髪'], ['blonde hair', '金髪'], ['silver hair', '銀髪'],
+                ['lavender hair', 'ラベンダー髪'], ['cherry blossom hair', '桜色の髪'], ['gradient hair', 'グラデーション髪'],
+                ['highlighted tips', '毛先グラデ'], ['two-tone hair', '2色髪'], ['multicolored hair', '多色髪']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'face',
+          label: '表情・目・視線・口・顔',
+          groups: [
+            {
+              title: '表情',
+              defaultOpen: true,
+              items: [
+                ['smile', '笑顔'], ['grin', 'にやり'], ['open mouth', '口開き'], ['closed mouth', '口閉じ'],
+                ['blush', '頬染め'], ['winking', 'ウインク'], ['tears', '涙'], ['crying', '泣き'],
+                ['angry', '怒り'], ['pout', 'ふくれっ面'], ['surprised', '驚き'], ['confused', '困惑'],
+                ['embarrassed', '照れ・恥'], ['serious', '真剣'], ['sleepy', '眠そう'], ['smug', 'ドヤ顔'],
+                ['shy', '恥じらい'], ['scared', '怯え'], ['expressionless', '無表情'], ['happy', '嬉しそう'],
+                ['seductive smile', '誘惑的な笑顔'], ['bedroom eyes', '色っぽい視線'], ['tongue out', '舌出し'],
+                ['panting', '息切れ'], ['sweat', '汗']
+              ]
+            },
+            {
+              title: '目の大きさ・形・色',
+              defaultOpen: false,
+              items: [
+                ['large eyes', '大きな瞳'], ['small eyes', '小さめの目'], ['narrow eyes', '細い目'], ['slit pupils', '縦長瞳孔'],
+                ['round eyes', '丸い目'], ['sharp eyes', '鋭い目'], ['sleepy eyes', '眠そうな目'], ['half-closed eyes', '半開き'],
+                ['upturned eyes', '上がり目'], ['downturned eyes', '垂れ目'], ['heterochromia', 'オッドアイ'], ['glowing eyes', '光る目'],
+                ['teary eyes', '涙目'], ['sparkling eyes', 'キラキラ目'], ['empty eyes', '虚ろな目'], ['heart in eyes', '目にハート'],
+                ['star in eyes', '目に星'], ['cross-shaped pupils', '十字瞳'], ['no pupils', '瞳孔なし'], ['single eye', '単眼'],
+                ['blue eyes', '青い目'], ['golden eyes', '黄金の目'], ['crimson eyes', '深紅の目'], ['jade eyes', '翡翠色の目']
+              ]
+            },
+            {
+              title: '視線・目線',
+              defaultOpen: false,
+              items: [
+                ['looking at viewer', 'カメラ目線'], ['looking away', '視線そらし'], ['looking up', '上を見る'], ['looking down', '下を見る'],
+                ['looking to the side', '横を見る'], ['looking back', '振り返り'], ['eyes closed', '目を閉じる'], ['eyes averted', '目をそらす'],
+                ['glancing', 'チラ見'], ['eye contact', '視線が合う'], ['upward gaze', '上目遣い'], ['downward gaze', '伏し目がち'],
+                ['staring', 'じっと見つめる'], ['glaring', 'にらむ'], ['blank stare', '虚ろな視線'], ['glancing sideways', '横目'],
+                ['eyes on target', 'ロックオン'], ['following with eyes', '目で追う'], ['looking down at viewer', '見下ろす'], ['looking up at viewer', '見上げる']
+              ]
+            },
+            {
+              title: '口の形・状態',
+              defaultOpen: false,
+              items: [
+                ['small mouth', '小さな口'], ['big mouth', '大きな口'], ['wide open mouth', '大きく開く'], ['smiling with mouth open', '口開き笑顔'],
+                ['smiling with closed mouth', '口閉じ微笑'], ['fangs', '小さな牙'], ['sharp teeth', 'ギザ歯'], ['visible teeth', '歯が見える'],
+                ['puckered lips', 'すぼめ唇'], ['biting lip', '唇を噛む'], ['lip gloss', 'リップグロス'], ['open mouth smile', '自然な笑顔'],
+                ['mouth agape', 'ぽかん'], ['wavy mouth', '波打ち口'], ['downturned mouth', 'への字口'], ['cat mouth', 'ω口'], ['no mouth', '口なし']
+              ]
+            },
+            {
+              title: '異形・頭部機械化',
+              defaultOpen: false,
+              items: [
+                ['multiple eyes', '3つ以上の目'], ['reptile eyes', '爬虫類の目'], ['split jaw', '割れた顎'], ['exposed fangs', '露出した牙'],
+                ['robot face', '機械の顔'], ['mechanical jaw', '機械の顎'], ['visors', 'バイザー'], ['single eye visor', '単眼バイザー'],
+                ['mechanical eye', '義眼'], ['glowing eye', '光る目(片目)'], ['holographic eye', 'ホログラム目'], ['antenna', 'アンテナ'],
+                ['cybernetic brain', '機械化脳'], ['data port', '接続ポート']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'body',
+          label: '体型・異形・メカ身体',
+          groups: [
+            {
+              title: '体格・特徴',
+              defaultOpen: true,
+              items: [
+                ['slim', 'スリム'], ['thin', 'スレンダー'], ['petite', '小柄'], ['tall', '高身長'], ['short', '低身長'],
+                ['muscular', '筋肉質'], ['toned', '引き締まった体'], ['curvy', '曲線的'], ['hourglass figure', 'グラマー体型'], ['plump', 'ぽっちゃり'],
+                ['flat chest', 'ぺたんこ'], ['small breasts', '小さめの胸'], ['medium breasts', '標準の胸'], ['large breasts', '大きな胸'],
+                ['huge breasts', '爆乳'], ['gigantic breasts', '超爆乳'], ['sideboob', '横乳'], ['underboob', '下乳'], ['cleavage', '谷間'],
+                ['jiggle physics', '揺れ表現'], ['wide hips', '広い腰'], ['thick thighs', 'むっちり太もも'], ['slim waist', '細いウエスト'],
+                ['bubble butt', '丸いお尻'], ['plump butt', 'ふっくらお尻'], ['narrow waist', 'くびれ'], ['hip dip', 'ヒップディップ'],
+                ['protruding hips', '張り出した腰'], ['soft body', 'やわらかい体'], ['long legs', '長い脚'], ['short legs', '短めの脚'],
+                ['long arms', '長い腕'], ['thick arms', '太めの腕'], ['slender fingers', 'ほっそり指'], ['bare legs', '素足(脚)'], ['bare feet', '素足(足)'],
+                ['loli', '幼い体型'], ['mature', '成熟体型'], ['chubby', 'ぽっちゃり愛され'], ['thicc', '太もも＆ヒップ強調'], ['athletic', 'アスリート系'],
+                ['voluptuous', '豊満'], ['androgynous', '中性的'], ['anorexic', '極細'], ['realistic body', 'リアル体型'], ['stylized proportions', 'デフォルメ体型']
+              ]
+            },
+            {
+              title: '異形パーツ・特殊構造',
+              defaultOpen: false,
+              items: [
+                ['horns', '角'], ['multiple horns', '複数の角'], ['antlers', '枝角'], ['tail', '尻尾'], ['long tail', '長い尻尾'],
+                ['devil tail', '悪魔の尻尾'], ['lizard tail', 'トカゲの尾'], ['scorpion tail', 'サソリの尾'], ['tentacles', '触手'],
+                ['extra arms', '追加の腕'], ['extra legs', '4本以上の脚'], ['animal ears', '獣耳'], ['cat ears', '猫耳'], ['wolf ears', '狼耳'],
+                ['bunny ears', 'ウサ耳'], ['fox ears', 'キツネ耳'], ['dog ears', 'イヌ耳'], ['beast ears', '獣耳全般'], ['paw hands', '肉球の手'],
+                ['paw feet', '獣足'], ['digitigrade legs', '獣脚'], ['scales', '鱗'], ['scale armor', '鱗肌'], ['feathers', '羽毛'],
+                ['wings', '翼'], ['angel wings', '天使の羽'], ['bat wings', 'コウモリ翼'], ['dragon wings', 'ドラゴン翼'], ['insect wings', '虫の薄羽'],
+                ['translucent wings', '透けた羽'], ['winged ears', '翼耳'], ['transparent body', '透明体'], ['slime body', 'スライム体'],
+                ['plant growth', '植物が生えた体'], ['stone skin', '石の肌'], ['floating limbs', '浮遊四肢'], ['tail mouth', '尻尾に口']
+              ]
+            },
+            {
+              title: '機械の四肢・部位',
+              defaultOpen: false,
+              items: [
+                ['mechanical arm', '義手'], ['mechanical arms', '両腕機械'], ['robot arm', 'ロボ腕'], ['cybernetic arm', 'サイボーグ腕'],
+                ['mechanical leg', '義足'], ['mechanical legs', '両足機械'], ['robot leg', 'ロボ脚'], ['cybernetic leg', 'サイボーグ脚'],
+                ['metal hands', '金属の手'], ['clawed mechanical hand', '鋭い爪の義手'], ['mechanical torso', '機械の胴体'], ['exposed mechanics', '内部機構露出'],
+                ['mechanical spine', '機械脊髄'], ['mechanical core', '発光コア'], ['armor plating', '外装装甲'], ['energy lines', '光るライン'],
+                ['cybernetic implants', '埋め込みパーツ'], ['chest panel', '胸部開閉パネル'], ['wires', '配線'], ['ventilation', '放熱口'],
+                ['full body prosthesis', '全身義体'], ['mecha musume', 'メカ娘'], ['biomechanical', '有機＋機械'], ['hardsuit', '強化スーツ'],
+                ['powered exoskeleton', '外骨格'], ['digital interface', 'デジタルUI投影'], ['glitch effect', 'グリッチ効果']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'outfit',
+          label: '衣装・コスチューム・露出',
+          groups: [
+            {
+              title: '基本コスチューム',
+              defaultOpen: true,
+              items: [
+                ['school uniform', '学生服'], ['maid outfit', 'メイド服'], ['nurse uniform', 'ナース服'], ['bunny suit', 'バニーガール'],
+                ['swimsuit', '水着(全般)'], ['school swimsuit', 'スクール水着'], ['sailor suit', 'セーラー服'], ['cheerleader uniform', 'チアリーダー'],
+                ['idol outfit', 'アイドル衣装'], ['wedding dress', 'ウェディングドレス'], ['china dress', 'チャイナドレス'], ['yukata', '浴衣'],
+                ['kimono', '着物'], ['miko', '巫女服'], ['armor', '鎧・戦士系'], ['witch costume', '魔女衣装'],
+                ['santa costume', 'サンタ衣装'], ['halloween costume', 'ハロウィン仮装'], ['ninja outfit', '忍者装束'], ['race queen outfit', 'レースクイーン']
+              ]
+            },
+            {
+              title: '民族衣装（アジア・中東・欧州・アフリカ・中南米）',
+              defaultOpen: false,
+              items: [
+                ['hakama', '袴'], ['furisode', '振袖'], ['cheongsam', '旗袍(チャイナ)'], ['hanfu', '漢服'], ['qipao', '改良チャイナ'],
+                ['ao dai', 'アオザイ'], ['hanbok', '韓服'], ['sari', 'サリー'], ['abaya', 'アバヤ'], ['hijab', 'ヒジャブ'],
+                ['burqa', 'ブルカ'], ['shalwar kameez', 'シャルワールカミーズ'], ['kaftan', 'カフタン'], ['turban', 'ターバン'], ['sikh attire', 'シク教衣装'],
+                ['mongolian deel', 'モンゴル・デール'], ['kazakh costume', 'カザフ民族服'], ['uzbek dress', 'ウズベク伝統衣'],
+                ['dirndl', 'ディアンドル'], ['lederhosen', 'レーダーホーゼン'], ['russian folk dress', 'ロシア民族衣装'], ['romanian folk costume', 'ルーマニア刺繍衣'],
+                ['greek traditional dress', 'ギリシャ伝統衣'], ['ukrainian embroidery', 'ウクライナ刺繍'], ['norwegian bunad', 'ブーナッド'],
+                ['french maid dress', 'フランス風メイド'], ['irish dance dress', 'アイルランドダンス衣'], ['hungarian folk dress', 'ハンガリー刺繍衣'],
+                ['dashiki', 'ダシキ'], ['kente cloth', 'ケンテ織物'], ['zulu attire', 'ズールー族衣装'], ['ethiopian dress', 'エチオピア衣装'],
+                ['maasai clothing', 'マサイ族衣装'], ['maori clothing', 'マオリ族衣装'], ['aboriginal dress', 'アボリジニ装束'],
+                ['islander dress', '太平洋諸島衣装'], ['tongan ceremonial dress', 'トンガ祭礼服'], ['hawaiian hula outfit', 'フラダンス衣装'],
+                ['aztec warrior costume', 'アステカ戦士'], ['native american dress', 'ネイティブアメリカン'], ['andean clothing', 'アンデス民族衣'],
+                ['maya costume', 'マヤ文明装束'], ['inca tunic', 'インカ・チュニック'], ['mexican folk dress', 'メキシコ刺繍ドレス'],
+                ['gaucho attire', 'ガウチョ'], ['brazilian festa dress', 'ブラジルフェスタ'], ['carnival costume', 'カーニバル羽根衣装'], ['panama pollera', 'パナマ・ポジェラ']
+              ]
+            },
+            {
+              title: 'ドレス（種類・形状・装飾・カラー）',
+              defaultOpen: false,
+              items: [
+                ['evening dress', 'イブニングドレス'], ['cocktail dress', 'カクテルドレス'], ['ball gown', 'ボールガウン'], ['bridesmaid dress', 'ブライズメイド'],
+                ['gothic dress', 'ゴシックドレス'], ['lolita dress', 'ロリータドレス'], ['chinese dress', 'チャイナドレス風'], ['fairy dress', '妖精風ドレス'],
+                ['fantasy dress', 'ファンタジードレス'], ['long dress', 'ロングドレス'], ['short dress', 'ショートドレス'], ['mini dress', 'ミニドレス'],
+                ['off-shoulder dress', 'オフショルドレス'], ['strapless dress', 'ストラップレス'], ['halter dress', 'ホルタードレス'], ['high slit dress', '高スリットドレス'],
+                ['backless dress', '背中開きドレス'], ['tight dress', 'タイトドレス'], ['mermaid dress', 'マーメイドライン'], ['lace dress', 'レースドレス'],
+                ['frilled dress', 'フリルドレス'], ['ribbon dress', 'リボンドレス'], ['beaded dress', 'ビーズ刺繍ドレス'], ['embroidered dress', '刺繍ドレス'],
+                ['sheer dress', '透け感ドレス'], ['silk dress', 'シルクドレス'], ['velvet dress', 'ベルベットドレス'], ['satin dress', 'サテンドレス'],
+                ['tulle dress', 'チュールドレス'], ['black dress', '黒ドレス'], ['white dress', '白ドレス'], ['red dress', '赤ドレス'],
+                ['blue dress', '青ドレス'], ['purple dress', '紫ドレス'], ['pink dress', 'ピンクドレス'], ['sparkling dress', 'ラメ光沢ドレス'],
+                ['elegant dress', '上品ドレス'], ['sexy dress', 'セクシードレス'], ['princess dress', 'お姫様ドレス']
+              ]
+            },
+            {
+              title: '水着・ビーチ（種類・デザイン・素材・小物）',
+              defaultOpen: false,
+              items: [
+                ['bikini', 'ビキニ'], ['sling bikini', 'スリングビキニ'], ['micro bikini', 'マイクロビキニ'], ['sports swimsuit', 'スポーツ水着'],
+                ['one-piece swimsuit', 'ワンピース水着'], ['competition swimsuit', '競泳水着'], ['strapless swimsuit', 'ストラップレス水着'],
+                ['highleg swimsuit', 'ハイレグ水着'], ['lowleg swimsuit', 'ローレグ水着'], ['halter neck', 'ホルターネック'], ['tie bikini', '結び紐ビキニ'],
+                ['side-tie bikini', '横紐ビキニ'], ['backless swimsuit', '背中開き水着'], ['frilled swimsuit', 'フリル水着'], ['off-shoulder swimsuit', '肩出し水着'],
+                ['sheer swimsuit', '透け素材水着'], ['string bikini', '紐ビキニ'], ['cutout swimsuit', 'カットアウト水着'], ['cleavage window', '胸元カットアウト'],
+                ['white swimsuit', '白水着'], ['black swimsuit', '黒水着'], ['red swimsuit', '赤水着'], ['blue swimsuit', '青水着'],
+                ['striped swimsuit', 'ボーダー水着'], ['polka dot swimsuit', '水玉水着'], ['glossy swimsuit', '光沢水着'], ['wet swimsuit', '濡れた水着'],
+                ['metallic swimsuit', 'メタリック水着'], ['latex swimsuit', 'ラテックス水着'], ['swim ring', '浮き輪'], ['goggles', '水中ゴーグル'],
+                ['flippers', '足ヒレ'], ['beach ball', 'ビーチボール'], ['towel', 'タオル'], ['sunscreen', '日焼け止め'],
+                ['sun hat', '麦わら帽子'], ['parasol', '日傘'], ['sandals', 'ビーチサンダル'], ['wrap skirt', 'パレオ・腰布']
+              ]
+            },
+            {
+              title: 'ファンタジー衣装（職業・種族・構造・雰囲気）',
+              defaultOpen: false,
+              items: [
+                ['knight armor', '騎士の鎧'], ['mage robe', '魔術師ローブ'], ['priestess outfit', '聖職者・巫女風'], ['alchemist outfit', '錬金術師衣装'],
+                ['assassin outfit', '暗殺者・忍び風'], ['witch outfit', '魔女風衣装'], ['healer outfit', '回復役・僧侶風'], ['ranger outfit', '弓使い・森の民'],
+                ['bard costume', '吟遊詩人風'], ['royal guard uniform', '王族近衛兵'], ['elven dress', 'エルフ族ドレス'], ['dwarven armor', 'ドワーフ鎧'],
+                ['beastkin outfit', '獣人族衣装'], ['demonic attire', '魔族・悪魔衣装'], ['angelic attire', '天使風衣装'], ['vampire outfit', '吸血鬼風'],
+                ['dragon knight armor', '竜騎士の鎧'], ['desert nomad outfit', '砂漠民・旅人風'], ['noble elf armor', '高貴なエルフ戦装束'], ['orc armor', 'オーク重装防具'],
+                ['hooded cloak', 'フード付きマント'], ['layered skirt', '重ねスカート'], ['corset dress', 'コルセットドレス'], ['high boots', 'ハイブーツ'],
+                ['lace-up bodice', '編み上げ上衣'], ['flowing sleeves', 'ゆったり長い袖'], ['metal pauldrons', '肩当てアーマー'], ['belt pouches', '腰ベルトポーチ'],
+                ['magic pendant', '魔法ペンダント'], ['gauntlets', '金属の手甲'], ['ceremonial robes', '儀式用ローブ'], ['royal dress', '王族・姫ドレス'],
+                ['battle-ready outfit', '戦闘用軽装'], ['enchanted clothing', '魔力込め服'], ['glowing runes', '光るルーン'], ['ancient garb', '古代文明の衣'],
+                ['forest-themed outfit', '森・自然モチーフ'], ['underworld fashion', '冥界ダーク衣装'], ['heavenly robes', '天上界ローブ'], ['festival attire', 'ファンタジー祭り服']
+              ]
+            },
+            {
+              title: '丈・露出・重ね着・ダメージ・ランジェリー',
+              defaultOpen: false,
+              items: [
+                ['mini skirt', 'ミニスカート'], ['micro skirt', '超ミニスカート'], ['short skirt', '短めスカート'], ['long skirt', 'ロングスカート'],
+                ['asymmetrical skirt', '非対称スカート'], ['midriff', 'お腹見え(ヘソ出し)'], ['crop top', 'クロップトップ'], ['bare shoulders', '肩露出'],
+                ['off shoulder', 'オフショル'], ['backless outfit', '背中開き服'], ['sleeveless', 'ノースリーブ'], ['long sleeves', '長袖'],
+                ['short sleeves', '半袖'], ['extra long sleeves', '萌え袖・超長袖'], ['thighhighs', 'ニーソ・絶対領域'], ['pantyhose', 'タイツ'],
+                ['open front', '前開き服'], ['layered clothing', '重ね着'], ['jacket', 'ジャケット'], ['hoodie', 'パーカー'],
+                ['sweater', 'セーター'], ['cardigan', 'カーディガン'], ['coat', 'コート'], ['cape', 'ケープ'], ['poncho', 'ポンチョ'],
+                ['scarf', 'マフラー・スカーフ'], ['vest', 'ベスト'], ['blazer', 'ブレザー'], ['overcoat', 'ロングコート'], ['shawl', 'ショール'],
+                ['kimono over clothes', '洋服の上に着物'], ['open jacket', '開いたジャケット'], ['unzipped hoodie', '開けたパーカー'],
+                ['apron over dress', 'ワンピ＋エプロン'], ['suspenders', 'サスペンダー'], ['armor over clothes', '服の上に鎧'],
+                ['torn clothes', '破れた服'], ['ripped clothes', '裂けた服'], ['tattered clothes', 'ボロボロの服'], ['dirty clothes', '汚れた服'],
+                ['mud on clothes', '泥つき服'], ['blood on clothes', '血のついた服'], ['burnt clothes', '焦げた服'], ['wet clothes', '濡れた服'],
+                ['soaked clothes', 'ずぶ濡れ'], ['damaged clothes', 'ダメージ服'], ['partially torn clothes', '一部破れ'], ['torn sleeves', '袖破れ'],
+                ['torn skirt', 'スカート破れ'], ['torn stockings', '伝線ストッキング'], ['scratched clothes', '引っかき傷'], ['burn marks', '焼け焦げ跡'],
+                ['torn cape', 'ボロボロのマント'], ['frayed clothes', 'ほつれた服'], ['stained clothes', 'シミのある服'], ['patchy clothes', '継ぎ接ぎ服'],
+                ['thighs', '太もも見え'], ['see-through clothing', '透けた服'], ['sheer clothing', '薄く透明な布'], ['strap slipping', '肩紐ずれ'],
+                ['wardrobe malfunction', '衣装トラブル'], ['nipple bump', '服越し凸表現'], ['panty peek', '下着チラ見え'], ['bare back', '背中露出'],
+                ['open shirt', '開いたシャツ'], ['unzipped', 'チャック開き'], ['button gap', 'ボタン隙間'], ['loose clothing', 'ゆるっとした服'],
+                ['lingerie', 'ランジェリー'], ['garter belt', 'ガーターベルト']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'equip_pose',
+          label: 'アクセ・装備・ポーズ',
+          groups: [
+            {
+              title: 'アクセサリー（頭・顔・首・手・その他）',
+              defaultOpen: true,
+              items: [
+                ['barrette', 'バレッタ'], ['hair flower', '髪に花'], ['headphones', 'ヘッドホン'], ['earphones', 'イヤホン'],
+                ['hat', '帽子'], ['beret', 'ベレー帽'], ['hood', 'フード付き'], ['glasses', 'メガネ'], ['sunglasses', 'サングラス'],
+                ['monocle', '片眼鏡'], ['face mask', 'マスク'], ['earrings', 'ピアス'], ['ear cuffs', 'イヤーカフ'], ['ear muffs', 'イヤーマフ'],
+                ['microphone headset', 'マイクヘッドセット'], ['eyepatch', '眼帯'], ['face paint', 'フェイスペイント'], ['choker', 'チョーカー'],
+                ['ribbon around neck', '首にリボン'], ['necktie', 'ネクタイ'], ['bowtie', '蝶ネクタイ'], ['collar', '首輪'],
+                ['pendant', 'ペンダント'], ['necklace', 'ネックレス'], ['high collar', '高めの襟'], ['gloves', '手袋'],
+                ['fingerless gloves', '指ぬき手袋'], ['arm warmers', 'アームウォーマー'], ['bracelet', 'ブレスレット'], ['watch', '腕時計'],
+                ['ring', '指輪'], ['nail polish', 'ネイル'], ['bandage on hand', '手に包帯'], ['tattoo', 'タトゥー'], ['wristband', 'リストバンド'],
+                ['bag', 'バッグ'], ['shoulder bag', 'ショルダーバッグ'], ['backpack', 'リュック'], ['pouch', 'ポーチ'], ['belt', 'ベルト'],
+                ['keychain', 'キーホルダー'], ['utility belt', 'ツールベルト'], ['brooch', 'ブローチ'], ['apron', 'エプロン']
+              ]
+            },
+            {
+              title: '戦闘用装備・機械アクセサリ',
+              defaultOpen: false,
+              items: [
+                ['sword', '剣'], ['greatsword', '大剣'], ['dagger', '短剣'], ['katana', '日本刀'], ['spear', '槍'],
+                ['axe', '斧'], ['bow', '弓'], ['gun', '銃'], ['dual wielding', '二刀流'], ['magic staff', '魔法の杖'],
+                ['plate armor', '重装金属鎧'], ['leather armor', '革の鎧'], ['chainmail', 'チェインメイル'], ['tactical vest', '戦術ベスト'],
+                ['combat uniform', '戦闘服'], ['bodysuit', 'ボディスーツ'], ['cloak', '戦闘用マント'], ['helmet', 'ヘルメット'],
+                ['shield', '盾'], ['ammo belt', '弾薬ベルト'], ['boots', '戦闘ブーツ'], ['scabbard', '鞘'], ['holster', 'ホルスター'],
+                ['visor', 'バイザー'], ['shoulder armor', '肩当て'], ['jetpack', 'ジェットパック'], ['mecha backpack', 'メカバックパック'],
+                ['mechanical wings', '機械の翼'], ['drone', '小型ドローン'], ['shoulder cannon', '肩の砲塔'], ['robot tail', '機械の尻尾'],
+                ['hover unit', '浮遊ユニット'], ['mechanical skirt', 'メカスカート'], ['gun arm', '銃内蔵の腕'], ['energy blade', '光剣・エネルギー刃']
+              ]
+            },
+            {
+              title: 'ポーズ・しぐさ',
+              defaultOpen: false,
+              items: [
+                ['standing', '立っている'], ['sitting', '座っている'], ['kneeling', '膝をつく'], ['lying down', '横たわる'],
+                ['on stomach', 'うつ伏せ'], ['crossed arms', '腕組み'], ['arms behind head', '頭の後ろで腕組'], ['peace sign', 'ピースサイン'],
+                ['v sign', 'Vサイン'], ['hands on hips', '両手を腰に'], ['one hand on hip', '片手を腰に'], ['salute', '敬礼'],
+                ['pointing', '指さし'], ['waving', '手を振る'], ['arms up', '両手を上げる'], ['arms outstretched', '両腕を広げる'],
+                ['hands clasped', '両手を組む'], ['covering mouth', '口元を隠す'], ['finger to lips', '唇に指'], ['leaning forward', '前のめり'],
+                ['arched back', '背中を反らす'], ['posing seductively', '色っぽいポーズ'], ['lying on bed', 'ベッドに寝そべる'],
+                ['pulling up skirt', 'スカートをまくる'], ['pulling shirt', 'シャツ裾を引く'], ['fingers on lips', '唇に指を当てる'],
+                ['looking over shoulder', '振り向きポーズ'], ['legs together', '脚を閉じて座る'], ['shy pose', '恥じらい仕草'],
+                ['playful pose', 'おちゃめ・艶っぽい'], ['mirror reflection', '鏡越しに見せる']
+              ]
+            }
+          ]
+        }
+      ];
+
+      // 人物タグの高速参照マップ（en -> ja）
+      const CHAR_TAG_MAP = {};
+      CHAR_SUBTABS.forEach(tab => {
+        tab.groups.forEach(g => {
+          g.items.forEach(([en, ja]) => {
+            if (!CHAR_TAG_MAP[en]) CHAR_TAG_MAP[en] = ja;
+          });
+        });
+      });
+
+      // =========================================================
+      // 4. Bセクション：シーン・背景設定（3サブタブ全タグ）
+      // =========================================================
+      const SCENE_SUBTABS = [
+        {
+          id: 'room',
+          label: '部屋・室内',
+          groups: [
+            {
+              title: '部屋・室内・小道具',
+              defaultOpen: true,
+              items: [
+                ['messy room', '散らかった部屋'], ['bedroom', '寝室'], ['bedroom setting', '親密な寝室空間'], ['living room', 'リビング'],
+                ['clutter', '雑多なモノ散乱'], ['clothes on floor', '床に脱ぎ捨てた服'], ['messy bed', 'ぐちゃっとしたベッド'], ['desk', '机・PCデスク'],
+                ['bookshelf', '本棚'], ['scattered books', '散らばった本'], ['posters on wall', '壁にポスター'], ['pile of clothes', '山積みの服'],
+                ['open closet', '開いたクローゼット'], ['monitor', 'モニター'], ['game console', 'ゲーム機'], ['futon', '布団'],
+                ['low table', 'ちゃぶ台・コタツ'], ['snacks', 'お菓子類'], ['empty cans', '空き缶・ペットボトル'], ['curtain', 'カーテン']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'shop',
+          label: '店舗・街',
+          groups: [
+            {
+              title: '店舗の種類',
+              defaultOpen: true,
+              items: [
+                ['general store', '雑貨屋'], ['antique shop', 'アンティークショップ'], ['bookstore', '本屋'], ['flower shop', '花屋'],
+                ['cafe', 'カフェ'], ['bakery', 'パン屋さん'], ['convenience store', 'コンビニ'], ['boutique', 'ブティック'],
+                ['toy shop', 'おもちゃ屋'], ['apothecary', '薬屋(ファンタジー)']
+              ]
+            },
+            {
+              title: '店の雰囲気・内装',
+              defaultOpen: false,
+              items: [
+                ['cozy interior', '居心地の良い店内'], ['wooden shelves', '木製の棚'], ['glass display case', 'ガラス展示ケース'],
+                ['dim lighting', '薄暗い照明'], ['warm lighting', '暖色系の照明'], ['wall shelves', '壁の棚'], ['rustic', '素朴・ヴィンテージ'],
+                ['cluttered interior', 'ごちゃっとした店内'], ['organized shelves', '整理された棚'], ['chalkboard sign', '手書き看板']
+              ]
+            },
+            {
+              title: '商品・アイテム',
+              defaultOpen: false,
+              items: [
+                ['trinkets', '小物・雑貨'], ['plush toys', 'ぬいぐるみ'], ['stationery', '文房具'], ['candles', 'キャンドル'],
+                ['handmade goods', '手作り雑貨'], ['jewelry', 'アクセサリー類'], ['keychains', 'キーホルダー'], ['ceramics', '陶器・食器'],
+                ['books', '本'], ['dried flowers', 'ドライフラワー']
+              ]
+            },
+            {
+              title: '店員・接客・客',
+              defaultOpen: false,
+              items: [
+                ['shopkeeper', '店主・店員'], ['cash register', 'レジ'], ['customer', '客'], ['holding shopping bag', '買い物袋を持つ'],
+                ['browsing', '商品を見て回る'], ['behind counter', 'カウンター奥に立つ'], ['talking to shopkeeper', '店員と話す'],
+                ['trying on clothes', '試着中'], ['shopping', '買い物中'], ['writing price tag', '値札を書く']
+              ]
+            },
+            {
+              title: '外観・備品・通り',
+              defaultOpen: false,
+              items: [
+                ['storefront', '店の外観'], ['shop sign', '看板'], ['open sign', '営業中サイン'], ['awnings', '店先のひさし'],
+                ['window display', 'ショーウィンドウ'], ['flower pots', '店頭の植木鉢'], ['hanging sign', '吊り下げ看板'],
+                ['wooden door', '木の扉'], ['bell above door', 'ドア上のベル'], ['narrow street', '小道・通り沿い']
+              ]
+            }
+          ]
+        },
+        {
+          id: 'env',
+          label: '日時・季節・天候',
+          groups: [
+            {
+              title: '時間帯',
+              defaultOpen: true,
+              items: [
+                ['early dawn sunrise', '早朝・夜明け'], ['bright fresh morning', '朝'], ['clear midday', '真昼'],
+                ['golden hour', '夕方・ゴールデンアワー'], ['twilight', '黄昏・ブルーアワー'], ['night', '夜'], ['late midnight', '深夜']
+              ]
+            },
+            {
+              title: '季節・天候',
+              defaultOpen: true,
+              items: [
+                ['clear sunny sky', '晴れ・快晴'], ['overcast sky', '曇り'], ['rain, wet reflections', '雨・濡れた路面'],
+                ['falling snow', '雪'], ['mist and soft fog', '霧・もや'], ['cherry blossoms', '桜(春)'],
+                ['summer clouds', '入道雲(夏)'], ['autumn foliage', '紅葉(秋)'], ['storm and lightning', '嵐・稲妻']
+              ]
+            }
+          ]
+        }
+      ];
+
+      const SCENE_TAG_MAP = {};
+      SCENE_SUBTABS.forEach(tab => {
+        tab.groups.forEach(g => {
+          g.items.forEach(([en, ja]) => {
+            if (!SCENE_TAG_MAP[en]) SCENE_TAG_MAP[en] = ja;
+          });
+        });
+      });
+
+      const RANDOM_SUBJECTS = {
+        t2i: [
+          '雨上がりの路地裏でネオンを見上げる黒猫',
+          '窓辺のカフェでコーヒーを飲む少女',
+          '桜吹雪が舞う夕暮れの海辺の駅',
+          '古いアンティークショップの店内で光る小瓶を眺める旅人'
+        ],
+        t2v: [
+          '夕暮れの海岸線を歩きながらゆっくり振り返る女性',
+          'ネオンが反射する雨の夜道を走るサイバーバイク',
+          '桜並木を吹き抜ける風と舞い上がる花びら'
+        ],
+        i2v: [
+          'ゆっくり瞬きして優しく微笑み、風が髪を揺らす',
+          'カメラがゆっくり近づき、背景の光が静かに揺らめく',
+          'ゆっくり振り返ってカメラを見つめ、服の裾がなびく'
+        ]
+      };
+
+      // =========================================================
+      // 5. ストレージ＆アプリケーション状態 (State)
+      // =========================================================
+      const STORAGE_KEYS = {
+        HISTORY: 'xmagic_studio_history_v2',
+        FAVORITES: 'xmagic_studio_favorites_v2',
+        CUSTOM_WORDS: 'xmagic_studio_custom_words_v2',
+        THEME: 'xmagic_studio_theme_v2'
+      };
+
+      const state = {
+        mode: 't2i',
+        lang: 'en',
+        subject: '',
+        ratio: '',
+        activeCategory: 'style',
+        catSearch: '',
+        selected: {},            // { [catId]: [itemId, ...] }
+        customWords: {},         // { [catId]: [{ id, label, en, isCustom: true }] }
+        charactersOpen: false,
+        characters: [],          // [{ id, gender, tags: [en,...], position, customNote }]
+        activeCharacterIndex: 0,
+        activeCharSubtab: 'basic',
+        charSearch: '',
+        groupRelation: {
+          arrangement: '',
+          interaction: ''
+        },
+        sceneOpen: false,
+        activeSceneSubtab: 'room',
+        sceneSearch: '',
+        sceneTags: [],           // [en, ...]
+        sceneCustom: '',
+        negative: '',
+        addFormOpen: false,
+        optionsOpen: false,
+        previewExpanded: false,
+        historyTab: 'history'
+      };
+
+      // DOM要素キャッシュ
+      const dom = {
+        themeColorMeta: document.getElementById('theme-color-meta'),
+        appLogoBadge: document.getElementById('app-logo-badge'),
+        btnRandom: document.getElementById('btn-random'),
+        btnReset: document.getElementById('btn-reset'),
+        btnHistory: document.getElementById('btn-history'),
+        historyBadge: document.getElementById('history-badge'),
+        btnTheme: document.getElementById('btn-theme'),
+        modeTabs: document.querySelectorAll('.mode-tab'),
+        modeHint: document.getElementById('mode-hint'),
+        langBtns: document.querySelectorAll('.lang-btn'),
+        presetBar: document.getElementById('preset-bar'),
+        subjectLabelText: document.getElementById('subject-label-text'),
+        subjectInput: document.getElementById('subject-input'),
+        btnClearSubject: document.getElementById('btn-clear-subject'),
+        i2vTipBanner: document.getElementById('i2v-tip-banner'),
+        ratioSectionWrap: document.getElementById('ratio-section-wrap'),
+        ratioLabel: document.getElementById('ratio-label'),
+        ratioContainer: document.getElementById('ratio-container'),
+        selectedSummarySection: document.getElementById('selected-summary-section'),
+        selectedTotalBadge: document.getElementById('selected-total-badge'),
+        btnClearAllTags: document.getElementById('btn-clear-all-tags'),
+        selectedSummaryChips: document.getElementById('selected-summary-chips'),
+        catSearchInput: document.getElementById('cat-search-input'),
+        btnClearCatSearch: document.getElementById('btn-clear-cat-search'),
+        categoryTabsWrap: document.getElementById('category-tabs-wrap'),
+        categoryTabs: document.getElementById('category-tabs'),
+        catPanelHeader: document.getElementById('cat-panel-header'),
+        activeCatTitle: document.getElementById('active-cat-title'),
+        btnClearActiveCat: document.getElementById('btn-clear-active-cat'),
+        btnToggleAddWord: document.getElementById('btn-toggle-add-word'),
+        addWordIcon: document.getElementById('add-word-icon'),
+        addWordFormWrap: document.getElementById('add-word-form-wrap'),
+        addWordForm: document.getElementById('add-word-form'),
+        addWordCatName: document.getElementById('add-word-cat-name'),
+        customWordJa: document.getElementById('custom-word-ja'),
+        customWordEn: document.getElementById('custom-word-en'),
+        btnCancelAddWord: document.getElementById('btn-cancel-add-word'),
+        btnSubmitAddWord: document.getElementById('btn-submit-add-word'),
+        activeCatChips: document.getElementById('active-cat-chips'),
+        customWordHint: document.getElementById('custom-word-hint'),
+        btnToggleCharacters: document.getElementById('btn-toggle-characters'),
+        charCountBadge: document.getElementById('char-count-badge'),
+        charOptionalHint: document.getElementById('char-optional-hint'),
+        charChevron: document.getElementById('char-chevron'),
+        charactersBody: document.getElementById('characters-body'),
+        btnAddCharacterHeader: document.getElementById('btn-add-character-header'),
+        charEmptyState: document.getElementById('char-empty-state'),
+        charEditorWrap: document.getElementById('char-editor-wrap'),
+        charTabsBar: document.getElementById('char-tabs-bar'),
+        charSelectedSummary: document.getElementById('char-selected-summary'),
+        charSelectedCount: document.getElementById('char-selected-count'),
+        btnClearCharTags: document.getElementById('btn-clear-char-tags'),
+        charSelectedChips: document.getElementById('char-selected-chips'),
+        charSearchInput: document.getElementById('char-search-input'),
+        btnClearCharSearch: document.getElementById('btn-clear-char-search'),
+        charSubtabsWrap: document.getElementById('char-subtabs-wrap'),
+        charActiveForm: document.getElementById('char-active-form'),
+        charFooterFields: document.getElementById('char-footer-fields'),
+        groupRelationPanel: document.getElementById('group-relation-panel'),
+        btnToggleScene: document.getElementById('btn-toggle-scene'),
+        sceneCountBadge: document.getElementById('scene-count-badge'),
+        sceneOptionalHint: document.getElementById('scene-optional-hint'),
+        sceneSummaryBadges: document.getElementById('scene-summary-badges'),
+        sceneChevron: document.getElementById('scene-chevron'),
+        sceneBody: document.getElementById('scene-body'),
+        sceneSearchInput: document.getElementById('scene-search-input'),
+        btnClearSceneSearch: document.getElementById('btn-clear-scene-search'),
+        sceneSubtabsWrap: document.getElementById('scene-subtabs-wrap'),
+        sceneSubtabs: document.getElementById('scene-subtabs'),
+        btnClearScene: document.getElementById('btn-clear-scene'),
+        sceneFormContainer: document.getElementById('scene-form-container'),
+        btnAccordionOptions: document.getElementById('btn-accordion-options'),
+        optionsActiveDot: document.getElementById('options-active-dot'),
+        accordionChevron: document.getElementById('accordion-chevron'),
+        accordionOptionsBody: document.getElementById('accordion-options-body'),
+        negativeInput: document.getElementById('negative-input'),
+        btnClearNegative: document.getElementById('btn-clear-negative'),
+        negChipsWrap: document.getElementById('neg-chips-wrap'),
+        btnTogglePreview: document.getElementById('btn-toggle-preview'),
+        previewModeBadge: document.getElementById('preview-mode-badge'),
+        previewCharCount: document.getElementById('preview-char-count'),
+        btnExpandPreview: document.getElementById('btn-expand-preview'),
+        previewBox: document.getElementById('prompt-preview-box'),
+        btnSaveFav: document.getElementById('btn-save-fav'),
+        btnCopy: document.getElementById('btn-copy'),
+        historyModal: document.getElementById('history-modal'),
+        historyBackdrop: document.getElementById('history-backdrop'),
+        historyPanel: document.getElementById('history-panel'),
+        btnCloseHistory: document.getElementById('btn-close-history'),
+        historyList: document.getElementById('history-list'),
+        htabBtns: document.querySelectorAll('.htab-btn'),
+        toast: document.getElementById('toast'),
+        toastIcon: document.getElementById('toast-icon'),
+        toastMessage: document.getElementById('toast-message')
+      };
+
+      // =========================================================
+      // 6. ユーティリティ関数
+      // =========================================================
+      function loadStorage(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (err) {
+          return fallback;
+        }
+      }
+
+      function saveStorage(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (err) { /* ignore */ }
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function getCategoryItems(catId) {
+        const cat = CATEGORIES.find(c => c.id === catId);
+        const presets = cat ? cat.items : [];
+        const customs = state.customWords[catId] || [];
+        return [...presets, ...customs];
+      }
+
+      function getSelectedItems(catId) {
+        const ids = state.selected[catId] || [];
+        const all = getCategoryItems(catId);
+        return ids.map(id => all.find(item => item.id === id)).filter(Boolean);
+      }
+
+      function createCharacter() {
+        return {
+          id: 'ch_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          gender: 'woman',
+          tags: [],
+          position: '',
+          customNote: ''
+        };
+      }
+
+      // 同一タグを大文字小文字無視で重複除去しながら結合するヘルパー
+      function dedupeTokens(tokens) {
+        const seen = new Set();
+        const result = [];
+        for (const raw of tokens) {
+          const trimmed = String(raw || '').trim();
+          if (!trimmed) continue;
+          const norm = trimmed.toLowerCase();
+          if (!seen.has(norm)) {
+            seen.add(norm);
+            result.push(trimmed);
+          }
+        }
+        return result;
+      }
+
+      // =========================================================
+      // 7. 3モード別 プロンプト生成エンジン（自動重複除去付き）
+      // =========================================================
+      function getCharacterTokens(isEn) {
+        const count = state.characters.length;
+        if (count === 0) return [];
+        const tokens = [];
+
+        if (count > 1) {
+          tokens.push(isEn ? `${count} characters` : `${count}人の人物`);
+        }
+
+        state.characters.forEach((ch, idx) => {
+          const gObj = CHAR_GENDERS.find(g => g.id === ch.gender);
+          const posObj = count >= 2 ? CHAR_POSITIONS.find(p => p.id === ch.position) : null;
+          const parts = [];
+
+          if (gObj && gObj.en) parts.push(isEn ? gObj.en : gObj.label);
+          (ch.tags || []).forEach(en => {
+            parts.push(isEn ? en : (CHAR_TAG_MAP[en] || en));
+          });
+          if (ch.customNote && ch.customNote.trim()) parts.push(ch.customNote.trim());
+          if (posObj && posObj.en) parts.push(isEn ? posObj.en : posObj.label);
+
+          if (parts.length > 0) {
+            if (count > 1) {
+              const prefix = isEn ? `Character ${idx + 1}: ` : `人物${idx + 1}：`;
+              tokens.push(prefix + dedupeTokens(parts).join(isEn ? ', ' : '、'));
+            } else {
+              tokens.push(...parts);
+            }
+          }
+        });
+
+        if (count >= 2) {
+          const arr = GROUP_ARRANGEMENTS.find(a => a.id === state.groupRelation.arrangement);
+          const inter = GROUP_INTERACTIONS.find(i => i.id === state.groupRelation.interaction);
+          if (arr) tokens.push(isEn ? arr.en : arr.label);
+          if (inter) tokens.push(isEn ? inter.en : inter.label);
+        }
+
+        return tokens;
+      }
+
+      function getSceneTokens(isEn) {
+        const tokens = [];
+        (state.sceneTags || []).forEach(en => {
+          tokens.push(isEn ? en : (SCENE_TAG_MAP[en] || en));
+        });
+        if (state.sceneCustom && state.sceneCustom.trim()) {
+          tokens.push(state.sceneCustom.trim());
+        }
+        return tokens;
+      }
+
+      function buildPrompt() {
+        const isEn = state.lang === 'en';
+        const sep = isEn ? ', ' : '、';
+        const subject = state.subject.trim();
+        const ratioObj = ASPECT_RATIOS.find(r => r.id === state.ratio);
+        const negative = state.negative.trim();
+
+        const pickCat = (id) => getSelectedItems(id).map(i => isEn ? i.en : i.label);
+
+        const qualities = pickCat('quality');
+        const styles = pickCat('style');
+        const lightings = pickCat('lighting');
+        const shadows = pickCat('shadow');
+        const colors = pickCat('color');
+        const textures = pickCat('texture');
+        const comps = pickCat('composition');
+        const cameras = pickCat('camera');
+        const motions = pickCat('motion');
+        const charTokens = getCharacterTokens(isEn);
+        const sceneTokens = getSceneTokens(isEn);
+
+        const rawTokens = [];
+
+        if (state.mode === 'i2v') {
+          // 【画像→動画 (I2V)】：動き指示・モーション・カメラワーク・表情変化に特化
+          if (subject) rawTokens.push(subject);
+          rawTokens.push(...motions);
+          rawTokens.push(...cameras);
+          rawTokens.push(...charTokens);
+          rawTokens.push(...lightings);
+          rawTokens.push(...shadows);
+          rawTokens.push(...sceneTokens);
+          rawTokens.push(...styles);
+          rawTokens.push(...qualities);
+        } else if (state.mode === 't2v') {
+          // 【動画生成 (T2V)】：被写体・人物・動き・カメラワーク・シーン・画風・光影・品質
+          if (subject) rawTokens.push(subject);
+          rawTokens.push(...charTokens);
+          rawTokens.push(...motions);
+          rawTokens.push(...cameras);
+          rawTokens.push(...sceneTokens);
+          rawTokens.push(...styles);
+          rawTokens.push(...lightings);
+          rawTokens.push(...shadows);
+          rawTokens.push(...colors);
+          rawTokens.push(...textures);
+          rawTokens.push(...comps);
+          rawTokens.push(...qualities);
+          if (ratioObj && ratioObj.id) rawTokens.push(isEn ? ratioObj.en : `比率${ratioObj.label}`);
+        } else {
+          // 【画像生成 (T2I)】：高品質・画風・被写体/人物・シーン・光影・色/質感・構図・比率
+          rawTokens.push(...qualities);
+          rawTokens.push(...styles);
+          if (subject) rawTokens.push(subject);
+          rawTokens.push(...charTokens);
+          rawTokens.push(...sceneTokens);
+          rawTokens.push(...lightings);
+          rawTokens.push(...shadows);
+          rawTokens.push(...colors);
+          rawTokens.push(...textures);
+          rawTokens.push(...comps);
+          rawTokens.push(...cameras);
+          rawTokens.push(...motions);
+          if (ratioObj && ratioObj.id) rawTokens.push(isEn ? ratioObj.en : `比率${ratioObj.label}`);
+        }
+
+        // 重複タグを自動除去（カンマ区切りされた複合タグ内も含め正規化）
+        const finalTokens = dedupeTokens(rawTokens);
+        if (finalTokens.length === 0 && !negative) return '';
+
+        let out = finalTokens.join(sep);
+        if (negative) {
+          out += out
+            ? (isEn ? `\nNegative prompt: ${negative}` : `\n除外要素：${negative}`)
+            : (isEn ? `Negative prompt: ${negative}` : `除外要素：${negative}`);
+        }
+        return out;
+      }
+
+      // =========================================================
+      // 8. UIレンダリング関数群
+      // =========================================================
+      function renderQuickPresets() {
+        dom.presetBar.innerHTML = QUICK_PRESETS.map(p => `
+          <button type="button" data-preset-id="${p.id}"
+            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 ${p.tagBg}">
+            <span>${p.icon}</span>
+            <span>${escapeHtml(p.label)}</span>
+          </button>
+        `).join('');
+      }
+
+      function renderRatios() {
+        const cfg = MODE_CONFIG[state.mode];
+        dom.ratioContainer.innerHTML = '';
+        const currentObj = ASPECT_RATIOS.find(r => r.id === state.ratio) || ASPECT_RATIOS[0];
+        dom.ratioLabel.textContent = currentObj.id ? `${currentObj.label}（${currentObj.desc}）` : '指定なし';
+
+        ASPECT_RATIOS.forEach(r => {
+          const isSelected = state.ratio === r.id;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.ratio = r.id;
+          btn.className = [
+            'py-2 px-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 flex items-center justify-center',
+            isSelected
+              ? cfg.activeChip
+              : 'bg-zinc-50 dark:bg-zinc-950/60 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+          ].join(' ');
+          btn.textContent = r.label;
+          dom.ratioContainer.appendChild(btn);
+        });
+      }
+
+      function renderNegativeChips() {
+        dom.negChipsWrap.innerHTML = NEGATIVE_PRESETS.map((n, idx) => `
+          <button type="button" data-neg-idx="${idx}"
+            class="text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-95 transition">
+            + ${escapeHtml(n.ja)}
+          </button>
+        `).join('');
+      }
+
+      function renderSelectedSummary() {
+        const allSelected = [];
+        CATEGORIES.forEach(cat => {
+          getSelectedItems(cat.id).forEach(item => allSelected.push({ catId: cat.id, item }));
+        });
+
+        const total = allSelected.length;
+        if (total === 0) {
+          dom.selectedSummarySection.classList.add('hidden');
+          return;
+        }
+
+        const cfg = MODE_CONFIG[state.mode];
+        dom.selectedSummarySection.classList.remove('hidden');
+        dom.selectedTotalBadge.textContent = String(total);
+        dom.selectedTotalBadge.className = `text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${cfg.badgeBg}`;
+
+        dom.selectedSummaryChips.innerHTML = allSelected.map(({ catId, item }) => `
+          <button type="button" data-unselect-cat="${catId}" data-unselect-id="${item.id}"
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700/80 active:scale-95 transition">
+            <span>${escapeHtml(item.label)}</span>
+            <span class="text-zinc-400 text-[13px] leading-none ml-0.5">×</span>
+          </button>
+        `).join('');
+      }
+
+      // カテゴリータブ描画
+      function renderCategoryTabs() {
+        const cfg = MODE_CONFIG[state.mode];
+        const orderedCats = state.mode === 't2i'
+          ? [...CATEGORIES.filter(c => !c.isVideo), ...CATEGORIES.filter(c => c.isVideo)]
+          : [...CATEGORIES.filter(c => c.isVideo), ...CATEGORIES.filter(c => !c.isVideo)];
+
+        dom.categoryTabs.innerHTML = orderedCats.map(cat => {
+          const isActive = state.activeCategory === cat.id;
+          const count = (state.selected[cat.id] || []).length;
+          const videoDot = (cat.isVideo && state.mode !== 't2i' && !isActive)
+            ? `<span class="w-1.5 h-1.5 rounded-full ${cfg.badgeBg}"></span>`
+            : '';
+          const badgeHtml = count > 0
+            ? `<span class="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${isActive ? 'bg-white/25 text-white' : cfg.badgeBg + ' text-white'}">${count}</span>`
+            : '';
+
+          return `
+            <button type="button" role="tab" data-tab-cat="${cat.id}" aria-selected="${isActive ? 'true' : 'false'}"
+              class="shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 ${
+                isActive ? cfg.activeTab : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-800'
+              }">
+              ${videoDot}<span>${cat.shortName}</span>${badgeHtml}
+            </button>
+          `;
+        }).join('');
+      }
+
+      // メインカテゴリーチップ一覧（通常表示 or 横断検索結果）
+      function renderActiveCategoryPanel() {
+        const cfg = MODE_CONFIG[state.mode];
+        const q = state.catSearch.trim().toLowerCase();
+        dom.btnClearCatSearch.classList.toggle('hidden', q.length === 0);
+
+        // 検索モード：全9カテゴリーを横断検索
+        if (q) {
+          dom.categoryTabsWrap.classList.add('hidden');
+          dom.catPanelHeader.classList.add('hidden');
+          dom.customWordHint.classList.add('hidden');
+
+          const hits = [];
+          CATEGORIES.forEach(cat => {
+            const selectedIds = state.selected[cat.id] || [];
+            getCategoryItems(cat.id).forEach(item => {
+              if (item.label.toLowerCase().includes(q) || item.en.toLowerCase().includes(q)) {
+                hits.push({ cat, item, isSelected: selectedIds.includes(item.id) });
+              }
+            });
+          });
+
+          if (hits.length === 0) {
+            dom.activeCatChips.innerHTML = `<p class="text-xs text-zinc-400 py-3 w-full text-center">「${escapeHtml(state.catSearch)}」に一致するタグはありません</p>`;
+            return;
+          }
+
+          dom.activeCatChips.innerHTML = hits.map(({ cat, item, isSelected }) => `
+            <button type="button" data-chip-cat="${cat.id}" data-chip-id="${item.id}"
+              class="px-3 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 flex items-center gap-1.5 ${
+                isSelected ? cfg.activeChip : 'bg-zinc-50 dark:bg-zinc-950/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
+              }">
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">${cat.shortName}</span>
+              <span>${escapeHtml(item.label)}</span>
+              <span class="text-[10px] opacity-65 font-mono">${escapeHtml(item.en)}</span>
+            </button>
+          `).join('');
+          return;
+        }
+
+        // 通常モード
+        dom.categoryTabsWrap.classList.remove('hidden');
+        dom.catPanelHeader.classList.remove('hidden');
+
+        const cat = CATEGORIES.find(c => c.id === state.activeCategory) || CATEGORIES[0];
+        const selectedIds = state.selected[cat.id] || [];
+        const items = getCategoryItems(cat.id);
+        const hasCustoms = (state.customWords[cat.id] || []).length > 0;
+
+        dom.activeCatTitle.textContent = cat.title;
+        dom.addWordCatName.textContent = cat.title;
+        dom.btnClearActiveCat.classList.toggle('hidden', selectedIds.length === 0);
+        dom.customWordHint.classList.toggle('hidden', !hasCustoms);
+        dom.btnSubmitAddWord.className = `px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-95 transition shadow-sm ${cfg.submitBtn}`;
+
+        dom.activeCatChips.innerHTML = items.map(item => {
+          const isSelected = selectedIds.includes(item.id);
+          if (item.isCustom) {
+            return `
+              <div class="inline-flex items-center rounded-xl border border-dashed transition-all select-none overflow-hidden ${
+                isSelected ? cfg.activeChip : 'bg-zinc-50 dark:bg-zinc-950/70 text-zinc-700 dark:text-zinc-200 border-zinc-400/80 dark:border-zinc-600'
+              }">
+                <button type="button" data-chip-cat="${cat.id}" data-chip-id="${item.id}" class="pl-3 pr-1.5 py-2 text-xs font-medium flex items-center gap-1 active:opacity-75">
+                  <span class="text-[10px] opacity-80">✦</span><span>${escapeHtml(item.label)}</span>
+                </button>
+                <button type="button" data-del-custom-cat="${cat.id}" data-del-custom-id="${item.id}" aria-label="${escapeHtml(item.label)}を削除"
+                  class="pr-2.5 pl-1 py-2 text-xs font-bold active:scale-90 ${isSelected ? 'text-white/80 hover:text-white' : 'text-zinc-400 hover:text-red-500'}">×</button>
+              </div>
+            `;
+          }
+          return `
+            <button type="button" data-chip-cat="${cat.id}" data-chip-id="${item.id}"
+              class="px-3 py-2 rounded-xl text-xs font-medium border transition-all active:scale-95 select-none ${
+                isSelected ? cfg.activeChip : 'bg-zinc-50 dark:bg-zinc-950/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+              }">
+              ${escapeHtml(item.label)}
+            </button>
+          `;
+        }).join('');
+      }
+
+      // =========================================================
+      // A. 人物設定レンダリング（6サブタブ＋折りたたみグループ＋横断検索）
+      // =========================================================
+      function renderCharactersSection() {
+        const cfg = MODE_CONFIG[state.mode];
+        const count = state.characters.length;
+
+        dom.charCountBadge.textContent = `${count}/3`;
+        dom.charCountBadge.className = count > 0
+          ? `text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${cfg.badgeBg}`
+          : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400';
+
+        dom.btnAddCharacterHeader.className = `shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white active:scale-95 transition shadow-sm ${cfg.submitBtn} ${count >= 3 ? 'opacity-40 pointer-events-none' : ''}`;
+        dom.btnAddCharacterHeader.disabled = count >= 3;
+
+        dom.charactersBody.classList.toggle('hidden', !state.charactersOpen);
+        dom.btnToggleCharacters.setAttribute('aria-expanded', state.charactersOpen ? 'true' : 'false');
+        dom.charChevron.classList.toggle('rotate-180', state.charactersOpen);
+
+        if (!state.charactersOpen) return;
+
+        if (count === 0) {
+          dom.charEmptyState.classList.remove('hidden');
+          dom.charEditorWrap.classList.add('hidden');
+          return;
+        }
+
+        if (state.activeCharacterIndex >= count) state.activeCharacterIndex = count - 1;
+        dom.charEmptyState.classList.add('hidden');
+        dom.charEditorWrap.classList.remove('hidden');
+
+        // 人物切替タブ
+        dom.charTabsBar.innerHTML = state.characters.map((ch, idx) => {
+          const isActive = idx === state.activeCharacterIndex;
+          const gObj = CHAR_GENDERS.find(g => g.id === ch.gender);
+          const gText = gObj && gObj.id ? gObj.label : '未指定';
+          const tagCnt = (ch.tags || []).length;
+          return `
+            <div class="shrink-0 inline-flex items-center rounded-xl border transition-all overflow-hidden ${isActive ? cfg.activeTab + ' border-transparent' : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border-zinc-200/80 dark:border-zinc-800'}">
+              <button type="button" data-select-char="${idx}" class="pl-3 pr-1.5 py-1.5 text-xs font-bold active:opacity-80 flex items-center gap-1">
+                <span>人物${idx + 1}: ${escapeHtml(gText)}</span>
+                ${tagCnt > 0 ? `<span class="text-[10px] px-1.5 rounded-full ${isActive ? 'bg-white/25' : 'bg-zinc-200 dark:bg-zinc-800'}">${tagCnt}</span>` : ''}
+              </button>
+              <button type="button" data-remove-char="${idx}" aria-label="人物${idx + 1}を削除"
+                class="pr-2.5 pl-1 py-1.5 text-xs font-bold active:scale-90 ${isActive ? 'text-white/80 hover:text-white' : 'text-zinc-400 hover:text-red-500'}">×</button>
+            </div>
+          `;
+        }).join('');
+
+        const char = state.characters[state.activeCharacterIndex];
+        const selectedSet = new Set(char.tags || []);
+
+        // 選択中タグサマリー
+        if ((char.tags || []).length > 0) {
+          dom.charSelectedSummary.classList.remove('hidden');
+          dom.charSelectedCount.textContent = String(char.tags.length);
+          dom.charSelectedChips.innerHTML = char.tags.map(en => `
+            <button type="button" data-char-tag="${escapeHtml(en)}"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 active:scale-95">
+              <span>${escapeHtml(CHAR_TAG_MAP[en] || en)}</span>
+              <span class="text-zinc-400">×</span>
+            </button>
+          `).join('');
+        } else {
+          dom.charSelectedSummary.classList.add('hidden');
+        }
+
+        const q = state.charSearch.trim().toLowerCase();
+        dom.btnClearCharSearch.classList.toggle('hidden', q.length === 0);
+
+        const chipIdle = 'bg-zinc-50 dark:bg-zinc-950/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700';
+
+        // 検索モード：全6サブタブを横断検索
+        if (q) {
+          dom.charSubtabsWrap.classList.add('hidden');
+          const hits = [];
+          CHAR_SUBTABS.forEach(tab => {
+            tab.groups.forEach(g => {
+              g.items.forEach(([en, ja]) => {
+                if (ja.toLowerCase().includes(q) || en.toLowerCase().includes(q)) {
+                  hits.push({ en, ja, group: g.title });
+                }
+              });
+            });
+          });
+
+          if (hits.length === 0) {
+            dom.charActiveForm.innerHTML = `<p class="text-xs text-zinc-400 py-3 text-center">「${escapeHtml(state.charSearch)}」に一致する人物タグはありません</p>`;
+          } else {
+            dom.charActiveForm.innerHTML = `
+              <div class="flex flex-wrap gap-1.5">
+                ${hits.slice(0, 120).map(({ en, ja }) => {
+                  const active = selectedSet.has(en);
+                  return `
+                    <button type="button" data-char-tag="${escapeHtml(en)}"
+                      class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 flex items-center gap-1 ${active ? cfg.activeChip : chipIdle}">
+                      <span>${escapeHtml(ja)}</span>
+                      <span class="text-[10px] opacity-60 font-mono">${escapeHtml(en)}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }
+        } else {
+          // 通常モード：6サブタブ表示
+          dom.charSubtabsWrap.classList.remove('hidden');
+          dom.charSubtabsWrap.innerHTML = CHAR_SUBTABS.map(tab => {
+            const isAct = tab.id === state.activeCharSubtab;
+            return `
+              <button type="button" data-char-subtab="${tab.id}"
+                class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  isAct ? cfg.activeTab : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300'
+                }">
+                ${escapeHtml(tab.label)}
+              </button>
+            `;
+          }).join('');
+
+          const activeTab = CHAR_SUBTABS.find(t => t.id === state.activeCharSubtab) || CHAR_SUBTABS[0];
+          let formHtml = '';
+
+          // サブタブ1の先頭に性別セレクターを表示
+          if (activeTab.id === 'basic') {
+            formHtml += `
+              <div class="space-y-2 pb-2">
+                <span class="block text-xs font-bold text-zinc-700 dark:text-zinc-200">性別</span>
+                <div class="grid grid-cols-3 gap-1.5">
+                  ${CHAR_GENDERS.map(g => {
+                    const active = char.gender === g.id;
+                    return `<button type="button" data-char-gender="${g.id}" class="py-2 px-2 rounded-xl text-xs font-bold border transition-all active:scale-95 ${active ? cfg.activeChip : chipIdle}">${escapeHtml(g.label)}</button>`;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // 各グループを折りたたみ可能な <details> で描画
+          formHtml += activeTab.groups.map(group => {
+            const groupSelectedCount = group.items.filter(([en]) => selectedSet.has(en)).length;
+            const shouldOpen = group.defaultOpen || groupSelectedCount > 0;
+            return `
+              <details ${shouldOpen ? 'open' : ''} class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-950/30 overflow-hidden">
+                <summary class="px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer select-none active:bg-zinc-100/60 dark:active:bg-zinc-800/40">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="text-xs font-bold text-zinc-700 dark:text-zinc-200 truncate">${escapeHtml(group.title)}</span>
+                    <span class="text-[10px] text-zinc-400">(${group.items.length})</span>
+                    ${groupSelectedCount > 0 ? `<span class="text-[10px] font-bold px-1.5 py-0.2 rounded-full text-white ${cfg.badgeBg}">${groupSelectedCount}</span>` : ''}
+                  </div>
+                  <svg class="details-chevron w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </summary>
+                <div class="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
+                  ${group.items.map(([en, ja]) => {
+                    const active = selectedSet.has(en);
+                    return `
+                      <button type="button" data-char-tag="${escapeHtml(en)}"
+                        class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 select-none ${active ? cfg.activeChip : chipIdle}">
+                        ${escapeHtml(ja)}
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              </details>
+            `;
+          }).join('');
+
+          dom.charActiveForm.innerHTML = formHtml;
+        }
+
+        // 自由補足＆複数人時の画面内位置
+        let footerHtml = `
+          <div>
+            <label class="block text-xs font-bold text-zinc-600 dark:text-zinc-300 mb-1.5">この人物への自由補足 <span class="font-normal text-zinc-400">（任意）</span></label>
+            <input type="text" data-char-custom-note="1" value="${escapeHtml(char.customNote || '')}" placeholder="例：赤いマフラーを巻いている、微笑みながら振り返る"
+              class="w-full text-base rounded-xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+          </div>
+        `;
+        if (count >= 2) {
+          footerHtml += `
+            <div class="space-y-1.5">
+              <span class="block text-xs font-bold text-zinc-600 dark:text-zinc-300">画面内の位置</span>
+              <div class="flex flex-wrap gap-1.5">
+                ${CHAR_POSITIONS.map(pos => {
+                  const active = (char.position || '') === pos.id;
+                  return `<button type="button" data-char-pos="${pos.id}" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 ${active ? cfg.activeChip : chipIdle}">${escapeHtml(pos.label)}</button>`;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+        dom.charFooterFields.innerHTML = footerHtml;
+
+        // 複数人の配置・関係パネル
+        if (count >= 2) {
+          dom.groupRelationPanel.classList.remove('hidden');
+          dom.groupRelationPanel.innerHTML = `
+            <span class="block text-xs font-bold text-zinc-800 dark:text-zinc-100">複数人の配置・絡み（${count}人設定中）</span>
+            <div class="flex flex-wrap gap-1.5">
+              ${GROUP_ARRANGEMENTS.map(a => `<button type="button" data-group-arr="${a.id}" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 ${state.groupRelation.arrangement === a.id ? cfg.activeChip : chipIdle}">${escapeHtml(a.label)}</button>`).join('')}
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${GROUP_INTERACTIONS.map(i => `<button type="button" data-group-int="${i.id}" class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 ${state.groupRelation.interaction === i.id ? cfg.activeChip : chipIdle}">${escapeHtml(i.label)}</button>`).join('')}
+            </div>
+          `;
+        } else {
+          dom.groupRelationPanel.classList.add('hidden');
+        }
+      }
+
+      // =========================================================
+      // B. シーン・背景設定レンダリング（3サブタブ＋横断検索）
+      // =========================================================
+      function updateSceneBadgesOnly() {
+        const cfg = MODE_CONFIG[state.mode];
+        const badges = (state.sceneTags || []).map(en => SCENE_TAG_MAP[en] || en);
+        if (state.sceneCustom && state.sceneCustom.trim()) badges.push(state.sceneCustom.trim());
+
+        if (badges.length > 0) {
+          dom.sceneCountBadge.textContent = String(badges.length);
+          dom.sceneCountBadge.className = `text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${cfg.badgeBg}`;
+          dom.sceneSummaryBadges.classList.remove('hidden');
+          dom.sceneSummaryBadges.innerHTML = badges.slice(0, 8).map(b =>
+            `<span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">${escapeHtml(b)}</span>`
+          ).join('') + (badges.length > 8 ? `<span class="text-[10px] text-zinc-400">+${badges.length - 8}</span>` : '');
+        } else {
+          dom.sceneCountBadge.classList.add('hidden');
+          dom.sceneSummaryBadges.classList.add('hidden');
+          dom.sceneSummaryBadges.innerHTML = '';
+        }
+      }
+
+      function renderSceneSection() {
+        const cfg = MODE_CONFIG[state.mode];
+        updateSceneBadgesOnly();
+
+        dom.sceneBody.classList.toggle('hidden', !state.sceneOpen);
+        dom.btnToggleScene.setAttribute('aria-expanded', state.sceneOpen ? 'true' : 'false');
+        dom.sceneChevron.classList.toggle('rotate-180', state.sceneOpen);
+
+        if (!state.sceneOpen) return;
+
+        const selectedSet = new Set(state.sceneTags || []);
+        const q = state.sceneSearch.trim().toLowerCase();
+        dom.btnClearSceneSearch.classList.toggle('hidden', q.length === 0);
+        const chipIdle = 'bg-zinc-50 dark:bg-zinc-950/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700';
+
+        if (q) {
+          dom.sceneSubtabsWrap.classList.add('hidden');
+          const hits = [];
+          SCENE_SUBTABS.forEach(tab => {
+            tab.groups.forEach(g => {
+              g.items.forEach(([en, ja]) => {
+                if (ja.toLowerCase().includes(q) || en.toLowerCase().includes(q)) {
+                  hits.push({ en, ja });
+                }
+              });
+            });
+          });
+
+          if (hits.length === 0) {
+            dom.sceneFormContainer.innerHTML = `<p class="text-xs text-zinc-400 py-3 text-center">「${escapeHtml(state.sceneSearch)}」に一致する背景タグはありません</p>`;
+            return;
+          }
+
+          dom.sceneFormContainer.innerHTML = `
+            <div class="flex flex-wrap gap-1.5">
+              ${hits.map(({ en, ja }) => {
+                const active = selectedSet.has(en);
+                return `
+                  <button type="button" data-scene-tag="${escapeHtml(en)}"
+                    class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 flex items-center gap-1 ${active ? cfg.activeChip : chipIdle}">
+                    <span>${escapeHtml(ja)}</span>
+                    <span class="text-[10px] opacity-60 font-mono">${escapeHtml(en)}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `;
+          return;
+        }
+
+        dom.sceneSubtabsWrap.classList.remove('hidden');
+        dom.sceneSubtabs.innerHTML = SCENE_SUBTABS.map(tab => {
+          const isAct = tab.id === state.activeSceneSubtab;
+          return `
+            <button type="button" data-scene-subtab="${tab.id}"
+              class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                isAct ? cfg.activeTab : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300'
+              }">
+              ${escapeHtml(tab.label)}
+            </button>
+          `;
+        }).join('');
+
+        const activeTab = SCENE_SUBTABS.find(t => t.id === state.activeSceneSubtab) || SCENE_SUBTABS[0];
+        let html = activeTab.groups.map(group => {
+          const cnt = group.items.filter(([en]) => selectedSet.has(en)).length;
+          const shouldOpen = group.defaultOpen || cnt > 0;
+          return `
+            <details ${shouldOpen ? 'open' : ''} class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-950/30 overflow-hidden">
+              <summary class="px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer select-none">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-zinc-700 dark:text-zinc-200">${escapeHtml(group.title)}</span>
+                  <span class="text-[10px] text-zinc-400">(${group.items.length})</span>
+                  ${cnt > 0 ? `<span class="text-[10px] font-bold px-1.5 rounded-full text-white ${cfg.badgeBg}">${cnt}</span>` : ''}
+                </div>
+                <svg class="details-chevron w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </summary>
+              <div class="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
+                ${group.items.map(([en, ja]) => {
+                  const active = selectedSet.has(en);
+                  return `
+                    <button type="button" data-scene-tag="${escapeHtml(en)}"
+                      class="px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all active:scale-95 select-none ${active ? cfg.activeChip : chipIdle}">
+                      ${escapeHtml(ja)}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </details>
+          `;
+        }).join('');
+
+        html += `
+          <div class="pt-1">
+            <input type="text" data-scene-custom="1" value="${escapeHtml(state.sceneCustom || '')}" placeholder="カスタム背景・場所を自由入力（例：夕暮れの学校の屋上）"
+              class="w-full text-base rounded-xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+          </div>
+        `;
+        dom.sceneFormContainer.innerHTML = html;
+      }
+
+      // モード切替に伴う全体UI更新
+      function updateModeThemeUI() {
+        const cfg = MODE_CONFIG[state.mode];
+        const isI2V = state.mode === 'i2v';
+
+        dom.modeTabs.forEach(tab => {
+          const isCurrent = tab.dataset.mode === state.mode;
+          tab.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+          tab.className = 'mode-tab py-2 px-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95 ' +
+            (isCurrent ? cfg.tabActiveClass : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200');
+        });
+
+        dom.modeHint.textContent = cfg.hint;
+        dom.subjectLabelText.textContent = cfg.subjectLabel;
+        dom.subjectInput.placeholder = cfg.subjectPlaceholder;
+        dom.i2vTipBanner.classList.toggle('hidden', !isI2V);
+        dom.ratioSectionWrap.classList.toggle('hidden', isI2V);
+        dom.charOptionalHint.classList.toggle('hidden', !isI2V);
+        dom.sceneOptionalHint.classList.toggle('hidden', !isI2V);
+
+        dom.appLogoBadge.className = `w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-sm transition-all duration-300 bg-gradient-to-br ${cfg.logoGradient} shrink-0`;
+        dom.btnCopy.className = `flex-1 py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base text-white shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200 bg-gradient-to-r ${cfg.copyGradient}`;
+        dom.previewModeBadge.textContent = cfg.shortBadge;
+        dom.previewModeBadge.className = `px-2 py-0.5 rounded-md text-[10px] font-bold text-white ${cfg.badgeBg} shrink-0`;
+        dom.historyBadge.className = `absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white ${cfg.badgeBg} flex items-center justify-center shadow`;
+
+        updateHistoryBadge();
+        renderRatios();
+        renderCharactersSection();
+        renderSceneSection();
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+      }
+
+      function updateLangUI() {
+        dom.langBtns.forEach(btn => {
+          const isCurrent = btn.dataset.lang === state.lang;
+          btn.className = 'lang-btn px-2.5 py-1 rounded-md text-[11px] font-bold transition-all active:scale-95 ' +
+            (isCurrent
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+              : 'text-zinc-500 dark:text-zinc-400');
+        });
+        updatePreview();
+      }
+
+      function updatePreview() {
+        const prompt = buildPrompt();
+        if (prompt) {
+          dom.previewBox.textContent = prompt;
+          dom.previewBox.classList.remove('text-zinc-400', 'dark:text-zinc-500');
+          dom.previewBox.classList.add('text-zinc-800', 'dark:text-zinc-100');
+        } else {
+          dom.previewBox.textContent = 'クイックプリセットを選ぶか、被写体・タグを選択してください...';
+          dom.previewBox.classList.add('text-zinc-400', 'dark:text-zinc-500');
+          dom.previewBox.classList.remove('text-zinc-800', 'dark:text-zinc-100');
+        }
+        dom.previewCharCount.textContent = `${prompt.length}文字`;
+        dom.btnClearSubject.classList.toggle('hidden', state.subject.length === 0);
+        dom.optionsActiveDot.classList.toggle('hidden', state.negative.trim().length === 0);
+      }
+
+      function setAddWordFormOpen(open) {
+        state.addFormOpen = open;
+        dom.addWordFormWrap.classList.toggle('open', open);
+        dom.btnToggleAddWord.setAttribute('aria-expanded', open ? 'true' : 'false');
+        dom.addWordIcon.classList.toggle('rotate-45', open);
+        if (open) setTimeout(() => dom.customWordJa.focus(), 120);
+      }
+
+      // =========================================================
+      // 9. コピー・トースト・テーマ・履歴管理
+      // =========================================================
+      function copyTextToClipboard(text) {
+        return new Promise((resolve, reject) => {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '0';
+          textarea.style.left = '0';
+          textarea.style.width = '2em';
+          textarea.style.height = '2em';
+          textarea.style.opacity = '0';
+          textarea.style.fontSize = '16px';
+          document.body.appendChild(textarea);
+
+          textarea.focus({ preventScroll: true });
+          textarea.select();
+          textarea.setSelectionRange(0, text.length);
+
+          let success = false;
+          try {
+            success = document.execCommand('copy');
+          } catch (err) {
+            success = false;
+          }
+          document.body.removeChild(textarea);
+
+          if (success) {
+            resolve();
+          } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(resolve).catch(reject);
+          } else {
+            reject(new Error('Copy failed'));
+          }
+        });
+      }
+
+      let toastTimer = null;
+      function showToast(message, icon = '✅') {
+        clearTimeout(toastTimer);
+        dom.toastIcon.textContent = icon;
+        dom.toastMessage.textContent = message;
+        dom.toast.classList.remove('opacity-0', '-translate-y-4');
+        dom.toast.classList.add('opacity-100', 'translate-y-0');
+
+        toastTimer = setTimeout(() => {
+          dom.toast.classList.add('opacity-0', '-translate-y-4');
+          dom.toast.classList.remove('opacity-100', 'translate-y-0');
+        }, 2200);
+      }
+
+      function applyTheme(mode) {
+        const isDark = mode === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+        dom.themeColorMeta.setAttribute('content', isDark ? '#09090b' : '#fafafa');
+      }
+
+      function initTheme() {
+        const saved = loadStorage(STORAGE_KEYS.THEME, null);
+        if (saved === 'light' || saved === 'dark') {
+          applyTheme(saved);
+        } else {
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          applyTheme(prefersDark ? 'dark' : 'light');
+        }
+      }
+
+      function updateHistoryBadge() {
+        const history = loadStorage(STORAGE_KEYS.HISTORY, []);
+        const favs = loadStorage(STORAGE_KEYS.FAVORITES, []);
+        const total = history.length + favs.length;
+        if (total > 0) {
+          dom.historyBadge.textContent = total > 99 ? '99+' : String(total);
+          dom.historyBadge.classList.remove('hidden');
+        } else {
+          dom.historyBadge.classList.add('hidden');
+        }
+      }
+
+      function createRecord(promptText) {
+        return {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          mode: state.mode,
+          lang: state.lang,
+          prompt: promptText,
+          createdAt: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          snapshot: {
+            mode: state.mode,
+            lang: state.lang,
+            subject: state.subject,
+            ratio: state.ratio,
+            selected: JSON.parse(JSON.stringify(state.selected)),
+            characters: JSON.parse(JSON.stringify(state.characters)),
+            groupRelation: JSON.parse(JSON.stringify(state.groupRelation)),
+            sceneTags: JSON.parse(JSON.stringify(state.sceneTags)),
+            sceneCustom: state.sceneCustom,
+            negative: state.negative
+          }
+        };
+      }
+
+      function addToHistory(promptText) {
+        let list = loadStorage(STORAGE_KEYS.HISTORY, []);
+        list = list.filter(item => item.prompt !== promptText);
+        list.unshift(createRecord(promptText));
+        if (list.length > 30) list = list.slice(0, 30);
+        saveStorage(STORAGE_KEYS.HISTORY, list);
+        updateHistoryBadge();
+      }
+
+      function addToFavorites(recordOrPrompt) {
+        let list = loadStorage(STORAGE_KEYS.FAVORITES, []);
+        const promptText = typeof recordOrPrompt === 'string' ? recordOrPrompt : recordOrPrompt.prompt;
+        if (list.some(item => item.prompt === promptText)) {
+          showToast('すでにお気に入りに保存されています', '⭐');
+          return;
+        }
+        const rec = typeof recordOrPrompt === 'string' ? createRecord(promptText) : { ...recordOrPrompt, id: Date.now().toString(36) };
+        list.unshift(rec);
+        if (list.length > 50) list = list.slice(0, 50);
+        saveStorage(STORAGE_KEYS.FAVORITES, list);
+        updateHistoryBadge();
+        showToast('お気に入りに保存しました！', '⭐');
+      }
+
+      function renderHistoryList() {
+        const isFavTab = state.historyTab === 'favorites';
+        const key = isFavTab ? STORAGE_KEYS.FAVORITES : STORAGE_KEYS.HISTORY;
+        const list = loadStorage(key, []);
+
+        dom.htabBtns.forEach(btn => {
+          const active = btn.dataset.htab === state.historyTab;
+          btn.className = 'htab-btn py-1.5 rounded-lg text-xs font-bold transition ' +
+            (active ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 dark:text-zinc-400');
+        });
+
+        if (list.length === 0) {
+          dom.historyList.innerHTML = `
+            <div class="py-12 text-center text-zinc-400 dark:text-zinc-500">
+              <p class="text-sm font-medium">${isFavTab ? 'お気に入りはまだありません' : 'コピー履歴はまだありません'}</p>
+              <p class="text-xs mt-1">${isFavTab ? '★ボタンから保存できます' : 'プロンプトをコピーすると自動で記録されます'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        dom.historyList.innerHTML = '';
+        list.forEach(item => {
+          const mCfg = MODE_CONFIG[item.mode] || MODE_CONFIG.t2i;
+          const card = document.createElement('div');
+          card.className = 'p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/80 dark:border-zinc-800 space-y-2.5';
+          card.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold text-white ${mCfg.badgeBg}">${mCfg.shortBadge}</span>
+                <span class="text-[11px] text-zinc-400">${escapeHtml(item.createdAt || '')}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                ${!isFavTab ? `<button type="button" data-fav-id="${item.id}" class="text-xs text-amber-500 hover:text-amber-400 px-2 py-1 rounded-lg active:scale-90 transition">★ 保存</button>` : ''}
+                <button type="button" data-delete-id="${item.id}" class="text-xs text-zinc-400 hover:text-red-500 px-2 py-1 rounded-lg active:scale-90 transition">削除</button>
+              </div>
+            </div>
+            <p class="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 line-clamp-3 font-mono whitespace-pre-wrap break-words"></p>
+            <div class="flex items-center gap-2 pt-0.5">
+              <button type="button" data-copy-id="${item.id}" class="flex-1 py-2 px-3 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 text-xs font-semibold active:scale-95 transition">
+                コピー
+              </button>
+              <button type="button" data-restore-id="${item.id}" class="flex-1 py-2 px-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold active:scale-95 transition">
+                設定を復元
+              </button>
+            </div>
+          `;
+          card.querySelector('p').textContent = item.prompt;
+          dom.historyList.appendChild(card);
+        });
+      }
+
+      function openHistoryModal() {
+        renderHistoryList();
+        dom.historyModal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          dom.historyBackdrop.classList.remove('opacity-0');
+          dom.historyPanel.classList.remove('translate-y-full');
+        });
+      }
+
+      function closeHistoryModal() {
+        dom.historyBackdrop.classList.add('opacity-0');
+        dom.historyPanel.classList.add('translate-y-full');
+        setTimeout(() => dom.historyModal.classList.add('hidden'), 280);
+      }
+
+      // =========================================================
+      // 10. イベントリスナー登録
+      // =========================================================
+      dom.modeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const nextMode = tab.dataset.mode;
+          state.mode = nextMode;
+          if ((nextMode === 't2v' || nextMode === 'i2v') && !['camera', 'motion'].includes(state.activeCategory)) {
+            state.activeCategory = nextMode === 'i2v' ? 'motion' : 'camera';
+          } else if (nextMode === 't2i' && ['camera', 'motion'].includes(state.activeCategory)) {
+            state.activeCategory = 'style';
+          }
+          updateModeThemeUI();
+        });
+      });
+
+      dom.presetBar.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-preset-id]');
+        if (!btn) return;
+        const preset = QUICK_PRESETS.find(p => p.id === btn.dataset.presetId);
+        if (!preset) return;
+
+        state.mode = preset.mode;
+        state.ratio = preset.ratio;
+        state.selected = {};
+        Object.entries(preset.tags).forEach(([catId, enList]) => {
+          state.selected[catId] = enList.map(en => findCatTagId(catId, en)).filter(Boolean);
+        });
+        state.activeCategory = preset.focusCat;
+        state.catSearch = '';
+        dom.catSearchInput.value = '';
+
+        updateModeThemeUI();
+        showToast(`「${preset.label}」プリセットを適用しました`, preset.icon);
+      });
+
+      dom.langBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.lang = btn.dataset.lang;
+          updateLangUI();
+        });
+      });
+
+      dom.btnTheme.addEventListener('click', () => {
+        const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+        applyTheme(next);
+        saveStorage(STORAGE_KEYS.THEME, next);
+      });
+
+      dom.subjectInput.addEventListener('input', (e) => {
+        state.subject = e.target.value;
+        updatePreview();
+      });
+
+      dom.btnClearSubject.addEventListener('click', () => {
+        state.subject = '';
+        dom.subjectInput.value = '';
+        updatePreview();
+      });
+
+      dom.ratioContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-ratio]');
+        if (!btn) return;
+        state.ratio = btn.dataset.ratio;
+        renderRatios();
+        updatePreview();
+      });
+
+      // メインカテゴリー検索＆チップ操作
+      dom.catSearchInput.addEventListener('input', (e) => {
+        state.catSearch = e.target.value;
+        renderActiveCategoryPanel();
+      });
+
+      dom.btnClearCatSearch.addEventListener('click', () => {
+        state.catSearch = '';
+        dom.catSearchInput.value = '';
+        renderActiveCategoryPanel();
+      });
+
+      dom.selectedSummaryChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-unselect-cat][data-unselect-id]');
+        if (!btn) return;
+        const catId = btn.dataset.unselectCat;
+        const id = btn.dataset.unselectId;
+        state.selected[catId] = (state.selected[catId] || []).filter(x => x !== id);
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+      });
+
+      dom.btnClearAllTags.addEventListener('click', () => {
+        state.selected = {};
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+      });
+
+      dom.categoryTabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('[data-tab-cat]');
+        if (!tab) return;
+        state.activeCategory = tab.dataset.tabCat;
+        setAddWordFormOpen(false);
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+      });
+
+      dom.btnClearActiveCat.addEventListener('click', () => {
+        state.selected[state.activeCategory] = [];
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+      });
+
+      dom.activeCatChips.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('[data-del-custom-cat][data-del-custom-id]');
+        if (delBtn) {
+          e.stopPropagation();
+          const catId = delBtn.dataset.delCustomCat;
+          const id = delBtn.dataset.delCustomId;
+          state.customWords[catId] = (state.customWords[catId] || []).filter(item => item.id !== id);
+          state.selected[catId] = (state.selected[catId] || []).filter(x => x !== id);
+          saveStorage(STORAGE_KEYS.CUSTOM_WORDS, state.customWords);
+          renderSelectedSummary();
+          renderCategoryTabs();
+          renderActiveCategoryPanel();
+          updatePreview();
+          showToast('カスタムワードを削除しました', '🗑️');
+          return;
+        }
+
+        const chipBtn = e.target.closest('[data-chip-cat][data-chip-id]');
+        if (!chipBtn) return;
+        const catId = chipBtn.dataset.chipCat;
+        const id = chipBtn.dataset.chipId;
+        const current = state.selected[catId] || [];
+        state.selected[catId] = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+      });
+
+      dom.btnToggleAddWord.addEventListener('click', () => setAddWordFormOpen(!state.addFormOpen));
+      dom.btnCancelAddWord.addEventListener('click', () => {
+        dom.addWordForm.reset();
+        setAddWordFormOpen(false);
+      });
+
+      dom.addWordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const catId = state.activeCategory;
+        const label = dom.customWordJa.value.trim();
+        const en = dom.customWordEn.value.trim();
+        if (!label) return;
+
+        if (getCategoryItems(catId).some(item => item.label === label)) {
+          showToast('同じ名前のワードがすでに存在します', '⚠️');
+          return;
+        }
+
+        const newItem = {
+          id: 'cw_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          label,
+          en: en || label,
+          isCustom: true
+        };
+        if (!state.customWords[catId]) state.customWords[catId] = [];
+        state.customWords[catId].push(newItem);
+        saveStorage(STORAGE_KEYS.CUSTOM_WORDS, state.customWords);
+
+        state.selected[catId] = [...(state.selected[catId] || []), newItem.id];
+        dom.addWordForm.reset();
+        setAddWordFormOpen(false);
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+        showToast(`「${label}」を追加して選択しました！`, '✨');
+      });
+
+      // A. 人物設定イベント
+      dom.btnToggleCharacters.addEventListener('click', () => {
+        state.charactersOpen = !state.charactersOpen;
+        renderCharactersSection();
+      });
+
+      dom.btnAddCharacterHeader.addEventListener('click', () => {
+        if (state.characters.length >= 3) return;
+        state.characters.push(createCharacter());
+        state.activeCharacterIndex = state.characters.length - 1;
+        state.charactersOpen = true;
+        renderCharactersSection();
+        updatePreview();
+      });
+
+      dom.charTabsBar.addEventListener('click', (e) => {
+        const remBtn = e.target.closest('[data-remove-char]');
+        if (remBtn) {
+          const idx = Number(remBtn.dataset.removeChar);
+          state.characters.splice(idx, 1);
+          if (state.activeCharacterIndex >= state.characters.length) {
+            state.activeCharacterIndex = Math.max(0, state.characters.length - 1);
+          }
+          renderCharactersSection();
+          updatePreview();
+          return;
+        }
+        const selBtn = e.target.closest('[data-select-char]');
+        if (selBtn) {
+          state.activeCharacterIndex = Number(selBtn.dataset.selectChar);
+          renderCharactersSection();
+        }
+      });
+
+      dom.btnClearCharTags.addEventListener('click', () => {
+        const char = state.characters[state.activeCharacterIndex];
+        if (!char) return;
+        char.tags = [];
+        renderCharactersSection();
+        updatePreview();
+      });
+
+      dom.charSelectedChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-char-tag]');
+        if (!btn) return;
+        const char = state.characters[state.activeCharacterIndex];
+        if (!char) return;
+        const en = btn.dataset.charTag;
+        char.tags = (char.tags || []).filter(t => t !== en);
+        renderCharactersSection();
+        updatePreview();
+      });
+
+      dom.charSearchInput.addEventListener('input', (e) => {
+        state.charSearch = e.target.value;
+        renderCharactersSection();
+      });
+
+      dom.btnClearCharSearch.addEventListener('click', () => {
+        state.charSearch = '';
+        dom.charSearchInput.value = '';
+        renderCharactersSection();
+      });
+
+      dom.charSubtabsWrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-char-subtab]');
+        if (!btn) return;
+        state.activeCharSubtab = btn.dataset.charSubtab;
+        renderCharactersSection();
+      });
+
+      dom.charActiveForm.addEventListener('click', (e) => {
+        const char = state.characters[state.activeCharacterIndex];
+        if (!char) return;
+
+        const gBtn = e.target.closest('[data-char-gender]');
+        if (gBtn) {
+          char.gender = gBtn.dataset.charGender;
+          renderCharactersSection();
+          updatePreview();
+          return;
+        }
+
+        const tBtn = e.target.closest('[data-char-tag]');
+        if (tBtn) {
+          const en = tBtn.dataset.charTag;
+          char.tags = char.tags || [];
+          char.tags = char.tags.includes(en) ? char.tags.filter(t => t !== en) : [...char.tags, en];
+          renderCharactersSection();
+          updatePreview();
+        }
+      });
+
+      dom.charFooterFields.addEventListener('click', (e) => {
+        const posBtn = e.target.closest('[data-char-pos]');
+        if (!posBtn) return;
+        const char = state.characters[state.activeCharacterIndex];
+        if (!char) return;
+        char.position = posBtn.dataset.charPos;
+        renderCharactersSection();
+        updatePreview();
+      });
+
+      dom.charFooterFields.addEventListener('input', (e) => {
+        const inp = e.target.closest('[data-char-custom-note]');
+        if (!inp) return;
+        const char = state.characters[state.activeCharacterIndex];
+        if (!char) return;
+        char.customNote = inp.value;
+        updatePreview();
+      });
+
+      dom.groupRelationPanel.addEventListener('click', (e) => {
+        const arrBtn = e.target.closest('[data-group-arr]');
+        if (arrBtn) {
+          const val = arrBtn.dataset.groupArr;
+          state.groupRelation.arrangement = state.groupRelation.arrangement === val ? '' : val;
+          renderCharactersSection();
+          updatePreview();
+          return;
+        }
+        const intBtn = e.target.closest('[data-group-int]');
+        if (intBtn) {
+          const val = intBtn.dataset.groupInt;
+          state.groupRelation.interaction = state.groupRelation.interaction === val ? '' : val;
+          renderCharactersSection();
+          updatePreview();
+        }
+      });
+
+      // B. シーン設定イベント
+      dom.btnToggleScene.addEventListener('click', () => {
+        state.sceneOpen = !state.sceneOpen;
+        renderSceneSection();
+      });
+
+      dom.sceneSearchInput.addEventListener('input', (e) => {
+        state.sceneSearch = e.target.value;
+        renderSceneSection();
+      });
+
+      dom.btnClearSceneSearch.addEventListener('click', () => {
+        state.sceneSearch = '';
+        dom.sceneSearchInput.value = '';
+        renderSceneSection();
+      });
+
+      dom.sceneSubtabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-scene-subtab]');
+        if (!btn) return;
+        state.activeSceneSubtab = btn.dataset.sceneSubtab;
+        renderSceneSection();
+      });
+
+      dom.btnClearScene.addEventListener('click', () => {
+        state.sceneTags = [];
+        state.sceneCustom = '';
+        renderSceneSection();
+        updatePreview();
+      });
+
+      dom.sceneFormContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-scene-tag]');
+        if (!btn) return;
+        const en = btn.dataset.sceneTag;
+        state.sceneTags = state.sceneTags.includes(en)
+          ? state.sceneTags.filter(t => t !== en)
+          : [...state.sceneTags, en];
+        renderSceneSection();
+        updatePreview();
+      });
+
+      dom.sceneFormContainer.addEventListener('input', (e) => {
+        const inp = e.target.closest('[data-scene-custom]');
+        if (!inp) return;
+        state.sceneCustom = inp.value;
+        updateSceneBadgesOnly();
+        updatePreview();
+      });
+
+      // ネガティブプロンプト
+      dom.btnAccordionOptions.addEventListener('click', () => {
+        state.optionsOpen = !state.optionsOpen;
+        dom.accordionOptionsBody.classList.toggle('open', state.optionsOpen);
+        dom.btnAccordionOptions.setAttribute('aria-expanded', state.optionsOpen ? 'true' : 'false');
+        dom.accordionChevron.classList.toggle('rotate-180', state.optionsOpen);
+      });
+
+      dom.negativeInput.addEventListener('input', (e) => {
+        state.negative = e.target.value;
+        updatePreview();
+      });
+
+      dom.btnClearNegative.addEventListener('click', () => {
+        state.negative = '';
+        dom.negativeInput.value = '';
+        updatePreview();
+      });
+
+      dom.negChipsWrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-neg-idx]');
+        if (!btn) return;
+        const item = NEGATIVE_PRESETS[Number(btn.dataset.negIdx)];
+        if (!item) return;
+        const val = state.lang === 'en' ? item.en : item.ja;
+        const cur = state.negative.trim();
+        if (!cur.includes(val)) {
+          state.negative = cur ? `${cur}, ${val}` : val;
+          dom.negativeInput.value = state.negative;
+          updatePreview();
+        }
+      });
+
+      // プレビュー展開・コピー・お気に入り
+      function togglePreviewExpand() {
+        state.previewExpanded = !state.previewExpanded;
+        dom.previewBox.classList.toggle('max-h-20', !state.previewExpanded);
+        dom.previewBox.classList.toggle('max-h-64', state.previewExpanded);
+        dom.btnExpandPreview.textContent = state.previewExpanded ? '折りたたむ' : '全文表示';
+      }
+      dom.btnExpandPreview.addEventListener('click', togglePreviewExpand);
+      dom.btnTogglePreview.addEventListener('click', togglePreviewExpand);
+      dom.previewBox.addEventListener('click', togglePreviewExpand);
+
+      dom.btnCopy.addEventListener('click', () => {
+        const prompt = buildPrompt();
+        if (!prompt) {
+          showToast('先にプリセットやタグを選んでください', '💡');
+          return;
+        }
+        copyTextToClipboard(prompt)
+          .then(() => {
+            addToHistory(prompt);
+            showToast(`${MODE_CONFIG[state.mode].name}用プロンプトをコピーしました！`, '✅');
+          })
+          .catch(() => {
+            showToast('コピーに失敗しました。手動で選択してください', '⚠️');
+          });
+      });
+
+      dom.btnSaveFav.addEventListener('click', () => {
+        const prompt = buildPrompt();
+        if (!prompt) {
+          showToast('保存するプロンプトがありません', '💡');
+          return;
+        }
+        addToFavorites(prompt);
+      });
+
+      // ランダム生成
+      dom.btnRandom.addEventListener('click', () => {
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const pool = RANDOM_SUBJECTS[state.mode] || RANDOM_SUBJECTS.t2i;
+        state.subject = pick(pool);
+        dom.subjectInput.value = state.subject;
+        state.selected = {};
+
+        if (state.mode === 'i2v') {
+          state.selected.camera = [pick(getCategoryItems('camera')).id];
+          state.selected.motion = [pick(getCategoryItems('motion')).id];
+        } else {
+          state.ratio = pick(ASPECT_RATIOS.slice(1)).id;
+          const targetCats = state.mode === 't2v'
+            ? ['camera', 'motion', 'style', 'lighting', 'quality']
+            : ['quality', 'style', 'lighting', 'shadow', 'color', 'composition'];
+          targetCats.forEach(catId => {
+            const items = getCategoryItems(catId);
+            if (items.length) state.selected[catId] = [pick(items).id];
+          });
+        }
+
+        renderRatios();
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+        showToast('ランダムに組み合わせました！', '🎲');
+      });
+
+      // 全リセット
+      dom.btnReset.addEventListener('click', () => {
+        state.subject = '';
+        state.ratio = '';
+        state.negative = '';
+        state.selected = {};
+        state.characters = [];
+        state.activeCharacterIndex = 0;
+        state.groupRelation = { arrangement: '', interaction: '' };
+        state.sceneTags = [];
+        state.sceneCustom = '';
+        state.catSearch = '';
+        state.charSearch = '';
+        state.sceneSearch = '';
+
+        dom.subjectInput.value = '';
+        dom.negativeInput.value = '';
+        dom.catSearchInput.value = '';
+        dom.charSearchInput.value = '';
+        dom.sceneSearchInput.value = '';
+
+        renderRatios();
+        renderCharactersSection();
+        renderSceneSection();
+        renderSelectedSummary();
+        renderCategoryTabs();
+        renderActiveCategoryPanel();
+        updatePreview();
+        showToast('入力と選択をすべてリセットしました', '🧹');
+      });
+
+      // 履歴モーダル開閉＆操作
+      dom.btnHistory.addEventListener('click', openHistoryModal);
+      dom.btnCloseHistory.addEventListener('click', closeHistoryModal);
+      dom.historyBackdrop.addEventListener('click', closeHistoryModal);
+
+      dom.htabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.historyTab = btn.dataset.htab;
+          renderHistoryList();
+        });
+      });
+
+      dom.historyList.addEventListener('click', (e) => {
+        const isFavTab = state.historyTab === 'favorites';
+        const key = isFavTab ? STORAGE_KEYS.FAVORITES : STORAGE_KEYS.HISTORY;
+        let list = loadStorage(key, []);
+
+        const copyBtn = e.target.closest('[data-copy-id]');
+        if (copyBtn) {
+          const item = list.find(x => x.id === copyBtn.dataset.copyId);
+          if (item) copyTextToClipboard(item.prompt).then(() => showToast('コピーしました！', '✅'));
+          return;
+        }
+
+        const favBtn = e.target.closest('[data-fav-id]');
+        if (favBtn) {
+          const item = list.find(x => x.id === favBtn.dataset.favId);
+          if (item) addToFavorites(item);
+          return;
+        }
+
+        const delBtn = e.target.closest('[data-delete-id]');
+        if (delBtn) {
+          list = list.filter(x => x.id !== delBtn.dataset.deleteId);
+          saveStorage(key, list);
+          updateHistoryBadge();
+          renderHistoryList();
+          showToast('削除しました', '🗑️');
+          return;
+        }
+
+        const resBtn = e.target.closest('[data-restore-id]');
+        if (resBtn) {
+          const item = list.find(x => x.id === resBtn.dataset.restoreId);
+          if (item && item.snapshot) {
+            const sn = item.snapshot;
+            state.mode = sn.mode || 't2i';
+            state.lang = sn.lang || 'en';
+            state.subject = sn.subject || '';
+            state.ratio = sn.ratio || '';
+            state.negative = sn.negative || '';
+            state.selected = JSON.parse(JSON.stringify(sn.selected || {}));
+            state.characters = JSON.parse(JSON.stringify(sn.characters || []));
+            state.activeCharacterIndex = 0;
+            state.groupRelation = JSON.parse(JSON.stringify(sn.groupRelation || { arrangement: '', interaction: '' }));
+            state.sceneTags = JSON.parse(JSON.stringify(sn.sceneTags || []));
+            state.sceneCustom = sn.sceneCustom || '';
+
+            dom.subjectInput.value = state.subject;
+            dom.negativeInput.value = state.negative;
+
+            updateModeThemeUI();
+            updateLangUI();
+            closeHistoryModal();
+            showToast('当時の設定を復元しました！', '♻️');
+          }
+        }
+      });
+
+      // =========================================================
+      // 11. 初期化
+      // =========================================================
+      state.customWords = loadStorage(STORAGE_KEYS.CUSTOM_WORDS, {});
+      initTheme();
+      renderQuickPresets();
+      renderNegativeChips();
+      updateModeThemeUI();
+      updateLangUI();
+    })();
+  </script>
+</body>
+</html>
